@@ -41,7 +41,7 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 
 ## Tech Stack
 - **External APIs:** Google Identity Services, Firebase Authentication / Firestore, Google Maps SDK for Android.
-- **Onboard Sensors:**GPS / Network Location, Gyroscope, Camera API, Microphone API
+- **Onboard Sensors:** GPS / Network Location, Gyroscope, Camera API, Microphone API
 - **Data Storage:** Proto DataStore(local data caching)
 
 ---

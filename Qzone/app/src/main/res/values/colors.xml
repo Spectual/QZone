@@ -1,0 +1,7 @@
+<resources>
+    <color name="qzone_black">#101010</color>
+    <color name="qzone_white">#FFFFFF</color>
+    <color name="qzone_gray">#9EA0A6</color>
+    <color name="qzone_primary">#2D2A4A</color>
+    <color name="qzone_accent">#FFB347</color>
+</resources>

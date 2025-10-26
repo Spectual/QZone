@@ -1,0 +1,122 @@
+                         QZone - A Location Based Survey Platform 
+                                                                    Team: Yifei Bao, Zhenyang Qian, Xuetong Fu 
+                                                                      Github: https://github.com/Spectual/QZone 
+                         
+                        1. App Concept & Primary Use Case 
+                         
+                        QZone is a next-generation mobile survey platform developed in Kotlin for Android. It aims to improve the 
+                        survey experience by connecting survey creators (researchers, marketers, etc.) with a diverse and 
+                        engaged user base through a geo-targeted reward system. 
+                         
+                        The process is simple: users open the app to find a list of nearby surveys, complete them for points, and 
+                        redeem those points for tangible rewards. For instance, after leaving a store, a user might get a push 
+                        notification to review their shopping experience in exchange for points. 
+                         
+                        QZone's mission is to transform the traditionally tedious task of filling out surveys into a fast, engaging, 
+                        and valuable experience for both participants and researchers. 
+                         
+                         
+                        2. Target Users & Problem Being Solved  
+                         
+                        Target Users: 
+                              -     Survey Participants (App Users): Students, young professionals, and any individual interested in 
+                                    sharing their opinions for rewards. 
+                              -     Survey Creators (Web Clients): Academic researchers, market research firms, product managers, 
+                                    and small businesses needing targeted user feedback. 
+                         
+                        Problems: 
+                              -     For Users: Current survey tools (e.g., web forms, email links) often provide a clunky, unengaging 
+                                    user experience on mobile devices. The motivation to participate is low due to a lack of 
+                                    immediate and valuable incentives. This leads to high drop-off rates and "survey fatigue." 
+                              -     For Clients: It is challenging and expensive to acquire high-quality, geographically diverse data 
+                                    samples. Existing platforms lack the ability to dynamically target users based on their real-world 
+                                    location. 
+                         
+                        Our Solution: QZone addresses these issues by creating a centralized, mobile-first platform that 
+                        gamifies the survey process with a rewards system and provides creators with a powerful geo-targeting 
+                        tool, increasing both the quantity and quality of survey responses. 
+                         
+                        3. Planned Features 
+                        We have divided our feature development into two phases: the core experience (MVP) and future 
+                        enhancements (Stretch Goals). 
+                         
+                        3.1 Minimum Viable Product (MVP) - The Core Experience 
+                         
+                        Onboarding & Authentication: Effortless user registration and login, including third-party support for 
+                        Google, Meta, and X to minimize friction. 
+                        Location-Based Survey Feed: Use the device's GPS to fetch and display a list of surveys relevant to the 
+                        user's current area. This is the central feature of our app. 
+                        Reward & Points System: Users earn a base number of points for every completed survey, with the 
+                        potential for bonus points set by the survey creator. 
+                        Multimedia Survey Interface: A native, intuitive interface for answering various question types, with 
+                        support for embedded text, images, audio, and video content. 
+                        User Profile Management: A section for users to manage basic information, such as their profile picture, 
+                        region, and personal interests. 
+                        Modern & Personalized UI/UX:  
+                              -     Built with a focus on beauty and usability, ensuring a branded, consistent design.  
+                              -     Essential user preferences like system-wide Dark/Light mode support and leverages Material3’s 
+                                    dynamic theming. 
+                         
+                        3.2 Stretch Goals - Future Enhancements 
+                         
+                        Advanced Survey Discovery & Targeting:  
+                              -     Profile-Based Matching: Push surveys based on user-provided interests and demographic tags. 
+                              -     Active Search & Filtering: Allow users to search for surveys using tags, keywords, or exclusive 
+                                    invitation codes. 
+                              -     Interactive Map View: Display nearby surveys on a map, allowing users to actively explore and 
+                                    select them. 
+                        Enhanced User Interaction & Gamification:  
+                              -     Shake-to-Refresh: Utilize the gyroscope sensor to allow users to refresh their survey feed with a 
+                                    simple shake gesture. 
+                              -     In-App Reward Redemption: A built-in store where users can redeem their points for digital gift 
+                                    cards, coupons, or other rewards. 
+                         
+                        Accessibility Features:  
+                        We implement accessibility best practices, including specialized color themes for users with color 
+                        blindness, dynamic font scaling, high contrast ratios option. 
+                         
+                        3.3 The Client-Side Platform (Conceptual Overview): 
+                        We will also have a powerful, browser-based web portal for survey creators. While its development is not 
+                        part of this Android project, its planned features include: 
+                              -     Intuitive Survey Builder: A user-friendly interface for clients to publish surveys. 
+                              -     AI-Assisted Creation & Templates: Offer pre-built templates for common use cases and 
+                                    leverage AI to help generate questions based on simple prompts. 
+                              -     Analytics Dashboard: Provide clients with a dashboard to monitor survey responses in 
+                                    real-time, complete with data visualizations, charts, and exportable reports. 
+                              -      
+                        4. Technical Plan  
+                         
+                        Our architecture will be MVVM with Jetpack Compose, separating UI from logic. For example, a 
+                        SurveyFeedViewModel will be responsible for calling a Repository to fetch surveys based on the user's 
+                        location. This ViewModel will expose the survey list as an observable StateFlow. Our Compose UI will 
+                        then subscribe to this flow and automatically re-render the list whenever the data changes, without 
+                        needing manual UI updates. This declarative approach keeps our UI simple and state-driven, while 
+                        allowing us to independently test the logic within our ViewModels, ensuring a robust and maintainable 
+                        application. 
+                         
+                        External APIs: Google Identity Services, Firebase Authentication / Firestore, Google Maps SDK for 
+                        Android. 
+                        Onboard Sensors:GPS / Network Location, Gyroscope, Camera API, Microphone API 
+                        Data Storage: Proto DataStore(local data caching) 
+                         
+                        5. Navigation Map 
+                        Onboarding: Splash Screen -> Login/Register Screen (with social login options) -> Profile Setup. 
+                        Main Interface: 
+                              -     Home (Survey Feed): The default screen. A scrollable list of available surveys nearby. 
+                              -     Map View (Stretch Goal): An interactive map showing survey locations. 
+                              -     Rewards: A screen displaying the user's point balance and the reward redemption store. 
+                              -     Profile: User profile, settings, and survey history. 
+                              -     Survey Flow: Select Survey from Feed -> Survey Detail Page -> Survey Interface (questions) -> 
+                                    Completion & Reward Confirmation. 
+                                                                                                                                                                                    
+                         
+                        6. Team Collaboration Plan & Responsibilities 
+                        As a collaborative team of three, we will share all design and architecture decisions. To ensure progress, 
+                        we have assigned primary focus areas, but we will all contribute to the entire codebase through pair 
+                        programming and code reviews. 
+                         
+                        Yifei Bao: Product & UX; user onboarding/auth; profile & basic recommendation design. 
+                        Xuetong Fu: Survey engine & data; questionnaire flow; storage & submission 
+                        Zhenyang Qian: Location & geofencing; rewards/points; platform integrations 
+                         
+                         

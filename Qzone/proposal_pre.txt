@@ -1,0 +1,151 @@
+    Qzone
+                    Oct 9, 2025
+    A Location Based Survey Platform
+    Team member: Zhenyang Qian, Xuetong Fu, Yifei Bao
+    Product Introduction
+                                  QZone  is  a  next-generation  mobile 
+                                  survey  platform  developed  in  Kotlin  for 
+                                  Android.  It  aims  to  improve  the  survey 
+                                  experience by connecting survey creators 
+                                  (researchers,  marketers,  etc.)  with  a 
+                                  diverse and engaged user base through a 
+                                  geo-targeted reward system.
+                                  The process is simple: users open the app 
+                                  to find a list of nearby surveys, complete 
+                                  them for points, and redeem those points 
+                                  for tangible rewards. 
+                                  For instance, after leaving a store, a user 
+                                  might  get  a  push  notification  to  review 
+                                  their shopping experience in exchange for 
+                                  points.
+     What is the problem?
+         For Users:                                              For Clients: 
+         Current survey tools (e.g., web                         It is challenging and 
+         forms, email links) often                               expensive to acquire 
+         provide a clunky, unengaging                            high-quality, geographically 
+         user experience on mobile                               diverse data samples. 
+         devices. The motivation to                              Existing platforms lack the 
+         participate is low due to a lack                        ability to dynamically target 
+         of immediate and valuable                               users based on their 
+         incentives. This leads to high                          real-world location.
+         drop-off rates and "survey 
+         fatigue."
+                                    MVP
+ Features: Survey
+                                   ● Onboarding: Fast login with Google/Meta/X.
+                                   ● Location Feed: GPS-based local survey list (core).
+                                   ● Rewards: Base points plus creator-set bonuses.
+                                   ● Multimedia UI: Answer via text, images, audio, video.
+                                   ● Profiles: Manage avatar, region, interests.
+                                   ● Modern UI/UX: Dark/Light modes, Material 3 theming.
+                                  Stretch Goals
+                                   ● Discovery & Targeting: Interest/demographic matching; 
+                                    search, filters, invite codes; interactive map.
+                                   ● Gamification: Shake-to-refresh; in-app credits for gift 
+                                    cards/coupons.
+                                   ● Accessibility: Color-blind themes, dynamic font sizing, 
+                                    high contrast.
+                                  Web Portal (Creators)
+                                   ● Builder: Intuitive survey creation.
+                                   ● AI & Templates: Prompt-based question generation.
+                                   ● Analytics: Real-time dashboard, charts, exportable 
+                                    reports.
+                                      MVP
+ Features: Profile
+                                     ● Onboarding: Fast login with Google/Meta/X.
+                                     ● Location Feed: GPS-based local survey list (core).
+                                     ● Rewards: Base points plus creator-set bonuses.
+                                     ● Multimedia UI: Answer via text, images, audio, video.
+                                     ● Profiles: Manage avatar, region, interests.
+                                     ● Modern UI/UX: Dark/Light modes, Material 3 theming.
+                                    Stretch Goals
+                                     ● Discovery & Targeting: Interest/demographic 
+                                      matching; search, filters, invite codes; interactive map.
+                                     ● Gamification: Shake-to-refresh; in-app credits for gift 
+                                      cards/coupons.
+                                     ● Accessibility: Color-blind themes, dynamic font sizing, 
+                                      high contrast.
+                                    Web Portal (Creators)
+                                     ● Builder: Intuitive survey creation.
+                                     ● AI & Templates: Prompt-based question generation.
+                                     ● Analytics: Real-time dashboard, charts, exportable 
+                                      reports.
+                                    MVP
+ Features: Rewards
+                                   ● Onboarding: Fast login with Google/Meta/X.
+                                   ● Location Feed: GPS-based local survey list (core).
+                                   ● Rewards: Base points plus creator-set bonuses.
+                                   ● Multimedia UI: Answer via text, images, audio, video.
+                                   ● Profiles: Manage avatar, region, interests.
+                                   ● Modern UI/UX: Dark/Light modes, Material 3 theming.
+                                  Stretch Goals
+                                   ● Discovery & Targeting: Interest/demographic matching; 
+                                    search, filters, invite codes; interactive map.
+                                   ● Gamification: Shake-to-refresh; in-app credits for gift 
+                                    cards/coupons.
+                                   ● Accessibility: Color-blind themes, dynamic font sizing, 
+                                    high contrast.
+                                  Web Portal (Creators)
+                                   ● Builder: Intuitive survey creation.
+                                   ● AI & Templates: Prompt-based question generation.
+                                   ● Analytics: Real-time dashboard, charts, exportable 
+                                    reports.
+                     WHAT ABOUT TECH STACKS?
+                           First and foremost:
+                           Jetpack compose and MVVM
+                           External APIs: Google Identity Services, Firebase 
+                           Authentication / Firestore, Google Maps SDK for Android.
+                           Onboard Sensors:GPS / Network Location, Gyroscope, 
+                           Camera API, Microphone API
+                           Data Storage: Proto DataStore(local data caching)
+   Team responsibilities
+   As a collaborative team of three, we will share all design 
+   and architecture decisions.
+   Yifei  Bao:  Leads  user  onboarding,  login,  and  user  profile 
+   data management, survey recommendation algo design.
+   Xuetong Fu: Leads the survey engine, including the interface 
+   for answering questions and submitting data.
+   Zhenyang Qian:  Leads  location  integration  (GPS)  for  the 
+   survey feed and the logic for the rewards system.
+                          Week 6 (Nov 10): Fully implement the dynamic, location-based 
+    Agile Workflow Plan
+                          survey feed and connect the rewards logic to the user's profile.
+    Week 1 (Oct 6): Finalize and submit our 
+                          Week 7 (Nov 17): Implement a core sensor feature like 
+    project proposal, and establish the core 
+                          'shake-to-refresh' and add local data caching for offline support. 
+                          Starting to implement rewards system.
+    project architecture.
+                          Week 8 (Nov 24): Following our Interim Presentation 2 (Nov 25), 
+    Week 2 (Oct 13): Begin building the user 
+                          we will polish the core experience and begin developing a 
+    authentication flow while simultaneously 
+                          stretch goal like the map view.
+    creating the foundational UI for the survey 
+    engine.
+                          Week 9 (Dec 1): This week is for comprehensive testing, bug 
+                          fixing, and overall UI/UX refinement.
+    Week 3 (Oct 20): Enable users to login and 
+    navigate to a home screen where a basic, 
+                          Week 10 (Dec 8): We will incorporate feedback from the Final 
+    interactive survey can be viewed.
+                          Rehearsal (Dec 9) and prepare all final documentation and 
+                          presentation materials.
+    Week 4 (Oct 27): Connect the UI to a live 
+    backend to display surveys and show a basic 
+                          Week 11 (Dec 15): Deliver our final presentation and submit the 
+    point reward upon completion for our first 
+                          completed QZone project on Dec 16.
+    demo.
+                          Risks and open questions
+                          ● Points-based incentives may induce cheating and 
+                           low-quality responses—anti-abuse measures and the 
+                           cost model need validation 
+                          ● GPS-based location may affect battery life and cpu 
+                           performance and have potential privacy and security 
+                           problems.
+                          ● How to balance location update frequency and 
+                           accuracy between privacy compliance and battery 
+                           life?
+                          ● How to set appropriate reward system to attract 
+                           users?

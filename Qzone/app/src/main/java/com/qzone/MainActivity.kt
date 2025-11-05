@@ -22,7 +22,8 @@ class MainActivity : ComponentActivity() {
                     val appState = rememberQzoneAppState(
                         surveyRepository = container.surveyRepository,
                         rewardRepository = container.rewardRepository,
-                        userRepository = container.userRepository
+                        userRepository = container.userRepository,
+                        locationRepository = container.locationRepository
                     )
                     QzoneApp(appState)
                 }

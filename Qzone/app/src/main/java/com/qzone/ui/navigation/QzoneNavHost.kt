@@ -71,13 +71,16 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.Feed.route) {
-            val feedViewModel: FeedViewModel = viewModel(factory = FeedViewModel.factory(appState.surveyRepository))
+            val feedViewModel: FeedViewModel = viewModel(
+                factory = FeedViewModel.factory(appState.surveyRepository, appState.locationRepository)
+            )
             FeedScreen(
                 state = feedViewModel.uiState,
                 onRefresh = feedViewModel::refresh,
                 onSurveySelected = { surveyId ->
                     navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
-                }
+                },
+                onLocationPermissionGranted = feedViewModel::onLocationPermissionGranted
             )
         }
         composable(

@@ -8,6 +8,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
@@ -17,14 +18,16 @@ fun rememberQzoneAppState(
     surveyRepository: SurveyRepository,
     rewardRepository: RewardRepository,
     userRepository: UserRepository,
+    locationRepository: LocationRepository,
     navController: NavHostController = rememberNavController()
 ): QzoneAppState {
-    return remember(navController, surveyRepository, rewardRepository, userRepository) {
+    return remember(navController, surveyRepository, rewardRepository, userRepository, locationRepository) {
         QzoneAppState(
             navController = navController,
             surveyRepository = surveyRepository,
             rewardRepository = rewardRepository,
-            userRepository = userRepository
+            userRepository = userRepository,
+            locationRepository = locationRepository
         )
     }
 }
@@ -34,7 +37,8 @@ class QzoneAppState(
     val navController: NavHostController,
     val surveyRepository: SurveyRepository,
     val rewardRepository: RewardRepository,
-    val userRepository: UserRepository
+    val userRepository: UserRepository,
+    val locationRepository: LocationRepository
 ) {
 
     fun isTopLevelDestination(destination: NavDestination?): Boolean {

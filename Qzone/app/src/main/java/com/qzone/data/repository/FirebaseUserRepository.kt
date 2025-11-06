@@ -1,5 +1,6 @@
 package com.qzone.data.repository
 
+import android.util.Log
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -129,6 +130,7 @@ class FirebaseUserRepository(
                 refreshToken = data.refreshToken
             )
         )
+        Log.d(TAG, "Access token: ${data.accessToken}")
         _currentUser.emit(data.toUserProfile(firebaseUser.uid, firebaseUser.photoUrl?.toString(), firebaseUser.displayName))
         return AuthResult(success = true)
     }
@@ -165,6 +167,7 @@ class FirebaseUserRepository(
     )
 
     companion object {
+        private const val TAG = "QzoneAuth"
         private val DEFAULT_PROFILE = UserProfile(
             id = "",
             displayName = "Guest",

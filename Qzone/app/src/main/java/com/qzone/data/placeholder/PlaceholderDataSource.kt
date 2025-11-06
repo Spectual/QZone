@@ -6,115 +6,34 @@ object PlaceholderDataSource {
 
     fun sampleSurveys(): List<Survey> = listOf(
         Survey(
-            id = "survey_city_park",
-            title = "City Park Feedback",
-            subtitle = "Share your thoughts about Boston Common",
-            category = SurveyCategory.EXPERIENCE,
-            locationLabel = "Boston Common",
-            latitude = 42.3551,
-            longitude = -71.0656,
-            points = 30,
-            distanceMeters = 320,
-            estimatedMinutes = 4,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "How satisfied are you with the cleanliness of Boston Common?",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Satisfied", "Neutral", "Dissatisfied")
-                ),
-                //test
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "What could we improve during your next visit?",
-                    type = SurveyQuestionType.SHORT_TEXT,
-                    helperText = "Type your answer"
-                ),
-                SurveyQuestion(
-                    id = "q3",
-                    prompt = "Rate the park amenities",
-                    type = SurveyQuestionType.RATING,
-                    options = listOf("1", "2", "3", "4", "5")
-                )
-            )
-        ),
-        Survey(
-            id = "survey_bu_transport",
-            title = "BU Student Transportation",
-            subtitle = "Tell us how you commute",
-            category = SurveyCategory.TRANSPORT,
-            locationLabel = "BU Central",
+            id = "survey_campus_dining",
+            title = "Campus Dining Satisfaction",
+            subtitle = "Share how we can improve the dining experience.",
+            category = SurveyCategory.LIFESTYLE,
+            locationLabel = "Student Union Dining Hall",
             latitude = 42.3505,
             longitude = -71.1054,
-            points = 25,
+            points = 10,
+            distanceMeters = 120,
             estimatedMinutes = 5,
             questions = listOf(
                 SurveyQuestion(
                     id = "q1",
-                    prompt = "Primary commute mode",
+                    prompt = "How satisfied are you with the overall campus dining experience?",
                     type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Bus", "Train", "Bike", "Walk", "Rideshare")
+                    options = listOf("Very satisfied", "Satisfied", "Neutral", "Dissatisfied")
                 ),
                 SurveyQuestion(
                     id = "q2",
-                    prompt = "Select issues you've faced recently",
+                    prompt = "Which aspects need improvement? (Select all that apply)",
                     type = SurveyQuestionType.MULTI_CHOICE,
-                    options = listOf("Delays", "Crowding", "Cost", "Accessibility", "Other")
+                    options = listOf("Food taste", "Menu variety", "Pricing", "Service speed")
                 ),
                 SurveyQuestion(
                     id = "q3",
-                    prompt = "Describe your ideal commute",
+                    prompt = "What suggestions do you have for the dining services?",
                     type = SurveyQuestionType.SHORT_TEXT,
                     helperText = "Optional"
-                )
-            )
-        ),
-        Survey(
-            id = "survey_north_end_food",
-            title = "North End Italian Food Review",
-            subtitle = "Help us rank local classics",
-            category = SurveyCategory.FOOD,
-            locationLabel = "North End",
-            latitude = 42.3647,
-            longitude = -71.0542,
-            points = 25,
-            estimatedMinutes = 3,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "Rate your latest dining experience",
-                    type = SurveyQuestionType.RATING,
-                    options = (1..5).map(Int::toString)
-                ),
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "What dish would you recommend?",
-                    type = SurveyQuestionType.SHORT_TEXT
-                )
-            )
-        ),
-        Survey(
-            id = "survey_marathon",
-            title = "Boston Marathon Experience",
-            subtitle = "Tell us about race day",
-            category = SurveyCategory.EVENT,
-            locationLabel = "Newbury St",
-            latitude = 42.3503,
-            longitude = -71.0810,
-            points = 15,
-            estimatedMinutes = 6,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "Were you a runner, spectator, or volunteer?",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Runner", "Spectator", "Volunteer")
-                ),
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "Would you participate again?",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Yes", "Maybe", "No")
                 )
             )
         )
@@ -123,29 +42,15 @@ object PlaceholderDataSource {
     fun sampleHistory(): List<SurveyHistoryItem> = listOf(
         SurveyHistoryItem(
             id = "history_1",
-            surveyId = "survey_city_park",
-            title = "City Park Feedback",
-            completedAt = "23/01/23",
-            pointsEarned = 30,
-            locationLabel = "Boston, MA"
-        ),
-        SurveyHistoryItem(
-            id = "history_2",
-            surveyId = "survey_bu_transport",
-            title = "BU Student Transportation",
-            completedAt = "23/01/23",
-            pointsEarned = 25,
-            locationLabel = "Boston, MA"
-        ),
-        SurveyHistoryItem(
-            id = "history_3",
-            surveyId = "survey_north_end_food",
-            title = "North End Italian Food Review",
-            completedAt = "23/01/23",
-            pointsEarned = 25,
+            surveyId = "survey_campus_dining",
+            title = "Campus Dining Satisfaction",
+            completedAt = "03/15/24",
+            pointsEarned = 10,
             locationLabel = "Boston, MA"
         )
     )
+
+    fun mockSurveyPayload(): MockSurveyPayload = MockSurveyPayloadFactory.englishCampusDiningSurvey()
 
     fun sampleRewards(): List<Reward> = listOf(
         Reward(

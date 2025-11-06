@@ -28,20 +28,7 @@ class PlaceholderSurveyRepository : SurveyRepository {
         delay(400)
 
         val allSurveys = PlaceholderDataSource.sampleSurveys()
-
-        val filteredSurveys = if (userLocation != null) {
-            allSurveys
-                .map { survey ->
-                    val distance = userLocation.distanceTo(survey.latitude, survey.longitude)
-                    survey.copy(distanceMeters = distance)
-                }
-                .filter { it.distanceMeters != null && it.distanceMeters <= radiusMeters }
-                .sortedBy { it.distanceMeters }
-        } else {
-            allSurveys
-        }
-
-        surveysFlow.value = applyCompletion(filteredSurveys)
+        surveysFlow.value = applyCompletion(allSurveys)
     }
 
     override suspend fun getSurveyById(id: String): Survey? {

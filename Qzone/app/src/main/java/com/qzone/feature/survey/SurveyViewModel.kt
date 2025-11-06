@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
-import com.qzone.data.model.SurveyQuestionType
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,8 +52,8 @@ class SurveyViewModel(
         val survey = _uiState.value.survey ?: return
         val question = survey.questions.firstOrNull { it.id == questionId } ?: return
         _uiState.update { state ->
-            val updatedAnswers = when (question.type) {
-                SurveyQuestionType.MULTI_CHOICE -> {
+            val updatedAnswers = when (question.type.lowercase()) {
+                "multiple" -> {
                     val current = state.answers[questionId]?.toMutableSet() ?: mutableSetOf()
                     if (toggle) {
                         if (current.contains(value)) current.remove(value) else current.add(value)

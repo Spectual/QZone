@@ -1,42 +1,18 @@
 package com.qzone.data.placeholder
 
-import com.qzone.data.model.*
+import com.qzone.data.model.Survey
+import com.qzone.data.model.SurveyHistoryItem
+import com.qzone.data.model.SurveyOption
+import com.qzone.data.model.SurveyQuestion
+import com.qzone.data.model.UserProfile
+import com.qzone.data.model.Reward
+import com.qzone.data.model.RewardRedemption
+import com.qzone.data.model.RedemptionStatus
 
 object PlaceholderDataSource {
 
     fun sampleSurveys(): List<Survey> = listOf(
-        Survey(
-            id = "survey_campus_dining",
-            title = "Campus Dining Satisfaction",
-            subtitle = "Share how we can improve the dining experience.",
-            category = SurveyCategory.LIFESTYLE,
-            locationLabel = "Student Union Dining Hall",
-            latitude = 42.3505,
-            longitude = -71.1054,
-            points = 10,
-            distanceMeters = 120,
-            estimatedMinutes = 5,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "How satisfied are you with the overall campus dining experience?",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Very satisfied", "Satisfied", "Neutral", "Dissatisfied")
-                ),
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "Which aspects need improvement? (Select all that apply)",
-                    type = SurveyQuestionType.MULTI_CHOICE,
-                    options = listOf("Food taste", "Menu variety", "Pricing", "Service speed")
-                ),
-                SurveyQuestion(
-                    id = "q3",
-                    prompt = "What suggestions do you have for the dining services?",
-                    type = SurveyQuestionType.SHORT_TEXT,
-                    helperText = "Optional"
-                )
-            )
-        )
+        mockSurveyPayload().toSurvey(id = "survey_campus_dining")
     )
 
     fun sampleHistory(): List<SurveyHistoryItem> = listOf(
@@ -46,7 +22,7 @@ object PlaceholderDataSource {
             title = "Campus Dining Satisfaction",
             completedAt = "03/15/24",
             pointsEarned = 10,
-            locationLabel = "Boston, MA"
+            locationLabel = "Campus Dining"
         )
     )
 
@@ -109,5 +85,30 @@ object PlaceholderDataSource {
                 status = RedemptionStatus.REDEEMED
             )
         )
+    )
+}
+
+private fun MockSurveyPayload.toSurvey(id: String): Survey {
+    return Survey(
+        id = id,
+        title = title,
+        description = description,
+        latitude = latitude,
+        longitude = longitude,
+        points = points,
+        questions = questions.mapIndexed { index, question ->
+            SurveyQuestion(
+                id = "q${index + 1}",
+                type = question.type,
+                content = question.content,
+                required = question.required,
+                options = question.options?.map { option ->
+                    SurveyOption(
+                        content = option.content,
+                        label = option.label
+                    )
+                }
+            )
+        }
     )
 }

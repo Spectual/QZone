@@ -11,6 +11,8 @@ object PlaceholderDataSource {
             subtitle = "Share your thoughts about Boston Common",
             category = SurveyCategory.EXPERIENCE,
             locationLabel = "Boston Common",
+            latitude = 42.3551,
+            longitude = -71.0656,
             points = 30,
             distanceMeters = 320,
             estimatedMinutes = 4,
@@ -21,6 +23,7 @@ object PlaceholderDataSource {
                     type = SurveyQuestionType.SINGLE_CHOICE,
                     options = listOf("Satisfied", "Neutral", "Dissatisfied")
                 ),
+                //test
                 SurveyQuestion(
                     id = "q2",
                     prompt = "What could we improve during your next visit?",
@@ -41,6 +44,8 @@ object PlaceholderDataSource {
             subtitle = "Tell us how you commute",
             category = SurveyCategory.TRANSPORT,
             locationLabel = "BU Central",
+            latitude = 42.3505,
+            longitude = -71.1054,
             points = 25,
             estimatedMinutes = 5,
             questions = listOf(
@@ -70,6 +75,8 @@ object PlaceholderDataSource {
             subtitle = "Help us rank local classics",
             category = SurveyCategory.FOOD,
             locationLabel = "North End",
+            latitude = 42.3647,
+            longitude = -71.0542,
             points = 25,
             estimatedMinutes = 3,
             questions = listOf(
@@ -92,6 +99,8 @@ object PlaceholderDataSource {
             subtitle = "Tell us about race day",
             category = SurveyCategory.EVENT,
             locationLabel = "Newbury St",
+            latitude = 42.3503,
+            longitude = -71.0810,
             points = 15,
             estimatedMinutes = 6,
             questions = listOf(

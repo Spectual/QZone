@@ -12,7 +12,7 @@ class PlaceholderRewardRepository : RewardRepository {
     private val rewardsFlow = MutableStateFlow(PlaceholderDataSource.sampleRewards())
 
     override val availableRewards: Flow<List<Reward>> = rewardsFlow.asStateFlow()
-
+    // this is a note
     override suspend fun getReward(id: String): Reward? {
         return rewardsFlow.value.firstOrNull { it.id == id }
     }

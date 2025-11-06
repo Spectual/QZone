@@ -1,5 +1,8 @@
 package com.qzone.feature.feed.ui
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlaylistAddCheck
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -27,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,19 +52,61 @@ import kotlinx.coroutines.launch
 fun FeedScreen(
     state: StateFlow<FeedUiState>,
     onRefresh: () -> Unit,
-    onSurveySelected: (String) -> Unit
+    onSurveySelected: (String) -> Unit,
+    onLocationPermissionGranted: () -> Unit = {}
 ) {
     val uiState by state.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    
+    // Location permission launcher
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                     permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            onLocationPermissionGranted()
+        }
+    }
+    
+    // Request location permission if not granted
+    LaunchedEffect(uiState.hasLocationPermission) {
+        if (!uiState.hasLocationPermission) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 32.dp)
     ) {
         Text(text = "Nearby Surveys", style = MaterialTheme.typography.headlineSmall)
+        
+        // Location info
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = if (uiState.currentLocation != null) Icons.Default.GpsFixed else Icons.Default.MyLocation,
+                contentDescription = null,
+                tint = if (uiState.currentLocation != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = uiState.currentLocation?.toDisplayString() ?: "Getting location...",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
+        
         uiState.completedCount.takeIf { it > 0 }?.let { count ->
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "$count completed nearby",
                 style = MaterialTheme.typography.bodySmall,
@@ -137,6 +185,15 @@ private fun SurveyCard(
                 Icon(imageVector = Icons.Default.LocationOn, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(text = survey.locationLabel, style = MaterialTheme.typography.bodySmall)
+                survey.distanceMeters?.let { distance ->
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "• ${formatDistance(distance)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 CategoryBadge(category = survey.category)
             }
@@ -178,5 +235,12 @@ private fun CategoryBadge(category: SurveyCategory) {
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(text = label, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+private fun formatDistance(meters: Int): String {
+    return when {
+        meters < 1000 -> "${meters}m"
+        else -> String.format("%.1fkm", meters / 1000.0)
     }
 }

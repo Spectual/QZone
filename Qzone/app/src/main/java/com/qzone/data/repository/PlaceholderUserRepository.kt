@@ -35,7 +35,9 @@ class PlaceholderUserRepository : UserRepository {
         }
         storedProfile = credential?.profile ?: storedProfile.copy(
             displayName = username,
-            email = credential?.profile?.email ?: "${username.lowercase()}@example.com"
+
+            // modification
+            email = "${username.lowercase()}@example.com"
         )
         userFlow.value = storedProfile
         return AuthResult(success = true)

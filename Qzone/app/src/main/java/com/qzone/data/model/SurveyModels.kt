@@ -35,6 +35,8 @@ data class Survey(
     val subtitle: String,
     val category: SurveyCategory,
     val locationLabel: String,
+    val latitude: Double,
+    val longitude: Double,
     val points: Int,
     val distanceMeters: Int? = null,
     val questions: List<SurveyQuestion> = emptyList(),

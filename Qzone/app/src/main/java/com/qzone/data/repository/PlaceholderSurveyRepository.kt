@@ -1,6 +1,7 @@
 package com.qzone.data.repository
 
 import com.qzone.data.model.Survey
+import com.qzone.data.model.UserLocation
 import com.qzone.data.placeholder.PlaceholderDataSource
 import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.delay
@@ -15,10 +16,27 @@ class PlaceholderSurveyRepository : SurveyRepository {
 
     override val nearbySurveys: Flow<List<Survey>> = surveysFlow.asStateFlow()
 
-    override suspend fun refreshNearby() {
+    override suspend fun refreshNearby(userLocation: UserLocation?, radiusMeters: Int) {
         // Simulate network delay for UI preview/testing purposes.
         delay(400)
-        surveysFlow.value = applyCompletion(PlaceholderDataSource.sampleSurveys())
+        
+        val allSurveys = PlaceholderDataSource.sampleSurveys()
+        
+        val filteredSurveys = if (userLocation != null) {
+            // Calculate distance for each survey and filter by radius
+            allSurveys
+                .map { survey ->
+                    val distance = userLocation.distanceTo(survey.latitude, survey.longitude)
+                    survey.copy(distanceMeters = distance)
+                }
+                .filter { it.distanceMeters!! <= radiusMeters }
+                .sortedBy { it.distanceMeters }
+        } else {
+            // No location available, return all surveys
+            allSurveys
+        }
+        
+        surveysFlow.value = applyCompletion(filteredSurveys)
     }
 
     override suspend fun getSurveyById(id: String): Survey? {

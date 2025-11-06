@@ -1,9 +1,11 @@
 package com.qzone
 
 import android.app.Application
+import com.qzone.data.repository.LocationRepositoryImpl
 import com.qzone.data.repository.PlaceholderRewardRepository
 import com.qzone.data.repository.PlaceholderSurveyRepository
 import com.qzone.data.repository.PlaceholderUserRepository
+import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
@@ -18,7 +20,8 @@ class QzoneApp : Application() {
         container = AppContainer(
             surveyRepository = PlaceholderSurveyRepository(),
             rewardRepository = PlaceholderRewardRepository(),
-            userRepository = PlaceholderUserRepository()
+            userRepository = PlaceholderUserRepository(),
+            locationRepository = LocationRepositoryImpl(this)
         )
     }
 }
@@ -26,5 +29,6 @@ class QzoneApp : Application() {
 class AppContainer(
     val surveyRepository: SurveyRepository,
     val rewardRepository: RewardRepository,
-    val userRepository: UserRepository
+    val userRepository: UserRepository,
+    val locationRepository: LocationRepository
 )

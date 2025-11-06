@@ -99,6 +99,10 @@ Temporary Items
 !.idea/scopes/
 !.idea/vcs.xml
 
+### VS Code template
+.vscode/
+*.code-workspace
+
 ### Kotlin template
 # Compiled class file
 *.class

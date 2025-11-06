@@ -46,13 +46,7 @@
   "msg": null,
   "data": {
     "accessToken": "uuid-access-token",
-    "refreshToken": "uuid-refresh-token",
-    "userName": "user",
-    "email": "user@example.com",
-    "avatarUrl": "/avatars/xxx.jpg",
-    "currentPoints": 150,
-    "rank": "白银",
-    "pointsToNextRank": 150
+    "refreshToken": "uuid-refresh-token"
   },
   "success": true
 }

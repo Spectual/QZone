@@ -132,34 +132,20 @@ class FirebaseUserRepository(
             )
         )
         Log.d(TAG, "Access token: ${data.accessToken}")
-        _currentUser.emit(data.toUserProfile(firebaseUser.uid, firebaseUser.photoUrl?.toString(), firebaseUser.displayName))
+        val firebaseEmail = firebaseUser.email.orEmpty()
+        val firebaseName = firebaseUser.displayName ?: firebaseEmail.substringBefore("@")
+        val updatedProfile = _currentUser.value.copy(
+            id = firebaseUser.uid,
+            displayName = firebaseName.ifBlank { DEFAULT_PROFILE.displayName },
+            email = firebaseEmail,
+            avatarUrl = firebaseUser.photoUrl?.toString()
+        )
+        _currentUser.emit(updatedProfile)
         return AuthResult(success = true)
     }
 
     private fun Throwable.toReadableMessage(): String {
         return message ?: "请求失败，请稍后再试"
-    }
-
-    private fun LoginResponse.toUserProfile(
-        userId: String,
-        avatarFromFirebase: String?,
-        firebaseDisplayName: String?
-    ): UserProfile {
-        val nextRankGap = pointsToNextRank ?: 0
-        val tierGoal = (currentPoints + nextRankGap).coerceAtLeast(currentPoints)
-        return UserProfile(
-            id = userId,
-            displayName = userName.ifBlank { firebaseDisplayName ?: email.substringBefore("@") },
-            email = email,
-            avatarUrl = avatarUrl ?: avatarFromFirebase,
-            levelLabel = rank ?: "Member",
-            totalPoints = currentPoints,
-            tierPointsGoal = tierGoal,
-            location = "",
-            countryRegion = "",
-            history = _currentUser.value.history,
-            redemptions = _currentUser.value.redemptions
-        )
     }
 
     private data class AuthTokens(

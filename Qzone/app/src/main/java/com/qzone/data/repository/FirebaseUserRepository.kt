@@ -116,6 +116,7 @@ class FirebaseUserRepository(
     private suspend fun refreshSession(firebaseUser: FirebaseUser): AuthResult {
         val tokenResult = firebaseUser.getIdToken(true).await()
         val idToken = tokenResult.token ?: return AuthResult(success = false, errorMessage = "未能获取 Firebase Token")
+        Log.d(TAG, "Firebase token: $idToken")
         val response = runCatching { apiService.login(LoginRequest(idToken)) }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
             return AuthResult(success = false, errorMessage = throwable.toReadableMessage())

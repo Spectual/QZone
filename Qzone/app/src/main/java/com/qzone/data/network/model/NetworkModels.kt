@@ -14,6 +14,15 @@ data class LoginRequest(
     val firebaseToken: String
 )
 
+data class RegisterRequest(
+    @Json(name = "firebaseToken")
+    val firebaseToken: String,
+    @Json(name = "userName")
+    val userName: String,
+    @Json(name = "email")
+    val email: String
+)
+
 data class LoginResponse(
     @Json(name = "accessToken")
     val accessToken: String,

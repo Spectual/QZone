@@ -13,6 +13,7 @@ import com.qzone.data.model.UserProfile
 import com.qzone.data.network.QzoneApiClient
 import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
+import com.qzone.data.network.model.RegisterRequest
 import com.qzone.domain.repository.UserRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -58,7 +59,34 @@ class FirebaseUserRepository(
             )?.await()
             val firebaseUser = auth.currentUser
                 ?: return@runCatching AuthResult(success = false, errorMessage = "注册成功但未找到用户会话")
-            refreshSession(firebaseUser)
+            val tokenResult = firebaseUser.getIdToken(true).await()
+            val idToken = tokenResult.token ?: return@runCatching AuthResult(success = false, errorMessage = "未能获取 Firebase Token")
+            Log.d(TAG, "Firebase token (register): $idToken")
+            val response = runCatching {
+                apiService.register(
+                    RegisterRequest(
+                        firebaseToken = idToken,
+                        userName = username,
+                        email = email
+                    )
+                )
+            }.getOrElse { throwable ->
+                if (throwable is CancellationException) throw throwable
+                return@runCatching AuthResult(success = false, errorMessage = throwable.toReadableMessage())
+            }
+            if (!response.success || response.data == null) {
+                return@runCatching AuthResult(success = false, errorMessage = response.msg ?: "注册失败")
+            }
+            val data = response.data
+            tokens.emit(
+                AuthTokens(
+                    accessToken = data.accessToken,
+                    refreshToken = data.refreshToken
+                )
+            )
+            Log.d(TAG, "Access token (register): ${data.accessToken}")
+            updateUserFromFirebase(firebaseUser)
+            AuthResult(success = true)
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
             AuthResult(success = false, errorMessage = throwable.toReadableMessage())
@@ -132,6 +160,15 @@ class FirebaseUserRepository(
             )
         )
         Log.d(TAG, "Access token: ${data.accessToken}")
+        updateUserFromFirebase(firebaseUser)
+        return AuthResult(success = true)
+    }
+
+    private fun Throwable.toReadableMessage(): String {
+        return message ?: "请求失败，请稍后再试"
+    }
+
+    private suspend fun updateUserFromFirebase(firebaseUser: FirebaseUser) {
         val firebaseEmail = firebaseUser.email.orEmpty()
         val firebaseName = firebaseUser.displayName ?: firebaseEmail.substringBefore("@")
         val updatedProfile = _currentUser.value.copy(
@@ -141,11 +178,6 @@ class FirebaseUserRepository(
             avatarUrl = firebaseUser.photoUrl?.toString()
         )
         _currentUser.emit(updatedProfile)
-        return AuthResult(success = true)
-    }
-
-    private fun Throwable.toReadableMessage(): String {
-        return message ?: "请求失败，请稍后再试"
     }
 
     private data class AuthTokens(

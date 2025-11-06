@@ -102,7 +102,6 @@ Temporary Items
 ### VS Code template
 .vscode/
 *.code-workspace
-
 ### Kotlin template
 # Compiled class file
 *.class

@@ -41,7 +41,7 @@ fun QzoneNavHost(
             val authViewModel: AuthViewModel = viewModel(factory = AuthViewModel.factory(appState.userRepository))
             SignInScreen(
                 state = authViewModel.uiState,
-                onUsernameChanged = authViewModel::onUsernameChanged,
+                onEmailChanged = authViewModel::onEmailChanged,
                 onPasswordChanged = authViewModel::onPasswordChanged,
                 onSignIn = {
                     authViewModel.signIn {

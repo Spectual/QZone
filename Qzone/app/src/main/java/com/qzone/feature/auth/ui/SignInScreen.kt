@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,7 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun SignInScreen(
     state: StateFlow<AuthUiState>,
-    onUsernameChanged: (String) -> Unit,
+    onEmailChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onSignIn: () -> Unit,
     onNavigateToRegister: () -> Unit
@@ -67,10 +67,10 @@ fun SignInScreen(
             )
             Spacer(modifier = Modifier.height(32.dp))
             OutlinedTextField(
-                value = uiState.username,
-                onValueChange = onUsernameChanged,
-                leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null) },
-                placeholder = { Text("Username") },
+                value = uiState.email,
+                onValueChange = onEmailChanged,
+                leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
+                placeholder = { Text("Email") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),

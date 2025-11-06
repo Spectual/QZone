@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AuthUiState(
-    val username: String = "",
+    val email: String = "",
     val password: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null
@@ -35,8 +35,8 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
     private val _registerState = MutableStateFlow(RegisterUiState())
     val registerState: StateFlow<RegisterUiState> = _registerState.asStateFlow()
 
-    fun onUsernameChanged(value: String) {
-        _uiState.update { it.copy(username = value, errorMessage = null) }
+    fun onEmailChanged(value: String) {
+        _uiState.update { it.copy(email = value, errorMessage = null) }
     }
 
     fun onPasswordChanged(value: String) {
@@ -59,7 +59,11 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val state = uiState.value
-            val result: AuthResult = repository.signIn(state.username, state.password)
+            if (state.email.isBlank() || state.password.isBlank()) {
+                _uiState.update { it.copy(isLoading = false, errorMessage = "请输入邮箱和密码") }
+                return@launch
+            }
+            val result: AuthResult = repository.signIn(state.email, state.password)
             if (result.success) {
                 onSuccess()
                 _uiState.update { it.copy(isLoading = false) }
@@ -73,6 +77,15 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
         viewModelScope.launch {
             _registerState.update { it.copy(isLoading = true, errorMessage = null) }
             val state = registerState.value
+            if (state.username.isBlank() || state.email.isBlank() || state.password.length < 6) {
+                _registerState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "请填写用户名、邮箱，并保证密码至少 6 位"
+                    )
+                }
+                return@launch
+            }
             val result = repository.register(state.username, state.email, state.password)
             if (result.success) {
                 _registerState.update { it.copy(isLoading = false, registrationComplete = true) }

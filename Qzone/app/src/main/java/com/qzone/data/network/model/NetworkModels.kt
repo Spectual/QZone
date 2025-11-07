@@ -30,3 +30,12 @@ data class LoginResponse(
     val refreshToken: String
 )
 
+data class SubmitAnswerItem(
+    @Json(name = "questionId")
+    val questionId: String,
+    @Json(name = "selected")
+    val selected: String?,
+    @Json(name = "content")
+    val content: String?
+)
+

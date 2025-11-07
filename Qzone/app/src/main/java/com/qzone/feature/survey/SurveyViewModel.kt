@@ -7,6 +7,8 @@ import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
+import com.qzone.data.network.QzoneApiClient
+import com.qzone.data.network.model.SubmitAnswerItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,9 +85,55 @@ class SurveyViewModel(
         viewModelScope.launch {
             val survey = _uiState.value.survey ?: return@launch
             _uiState.update { it.copy(isSubmitting = true) }
-            repository.markSurveyCompleted(surveyId)
-            userRepository.recordSurveyCompletion(survey)
-            _uiState.update { it.copy(isSubmitting = false, isComplete = true) }
+            // Build request body from answers
+            val answersMap = _uiState.value.answers
+            val items = survey.questions.map { q ->
+                val selectedValues = answersMap[q.id].orEmpty()
+                val qType = q.type.lowercase()
+                when (qType) {
+                    "text" -> {
+                        SubmitAnswerItem(
+                            questionId = q.id,
+                            selected = null,
+                            content = selectedValues.firstOrNull()
+                        )
+                    }
+                    "multiple" -> {
+                        // Map selected option contents to their labels (e.g., A, B)
+                        val labels = selectedValues.mapNotNull { ans ->
+                            q.options?.firstOrNull { it.content == ans }?.label ?: ans
+                        }
+                        SubmitAnswerItem(
+                            questionId = q.id,
+                            selected = labels.joinToString(",").ifBlank { null },
+                            content = null
+                        )
+                    }
+                    else -> {
+                        // single choice or other types
+                        val label = selectedValues.firstOrNull()?.let { ans ->
+                            q.options?.firstOrNull { it.content == ans }?.label ?: ans
+                        }
+                        SubmitAnswerItem(
+                            questionId = q.id,
+                            selected = label,
+                            content = null
+                        )
+                    }
+                }
+            }
+
+            val response = runCatching { QzoneApiClient.service.submitResponses(items) }.getOrElse { throwable ->
+                _uiState.update { it.copy(isSubmitting = false) }
+                return@launch
+            }
+            if (response.success) {
+                repository.markSurveyCompleted(surveyId)
+                userRepository.recordSurveyCompletion(survey)
+                _uiState.update { it.copy(isSubmitting = false, isComplete = true) }
+            } else {
+                _uiState.update { it.copy(isSubmitting = false) }
+            }
         }
     }
 

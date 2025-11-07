@@ -4,6 +4,7 @@ import com.qzone.data.network.model.ApiResult
 import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
 import com.qzone.data.network.model.RegisterRequest
+import com.qzone.data.network.model.SubmitAnswerItem
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -14,5 +15,8 @@ interface QzoneApiService {
 
     @POST("/api/user/register")
     suspend fun register(@Body request: RegisterRequest): ApiResult<LoginResponse>
+
+    @POST("/api/response/")
+    suspend fun submitResponses(@Body body: List<SubmitAnswerItem>): ApiResult<String>
 }
 

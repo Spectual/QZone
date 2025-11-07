@@ -23,6 +23,20 @@ object QzoneApiClient {
             level = HttpLoggingInterceptor.Level.BASIC
         }
         OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val path = original.url.encodedPath
+                val isAuthEndpoint = path == "/api/user/login" || path == "/api/user/register"
+                val token = AuthTokenProvider.accessToken
+                val request = if (!isAuthEndpoint && !token.isNullOrBlank()) {
+                    original.newBuilder()
+                        .addHeader("Authorization", "Bearer $token")
+                        .build()
+                } else {
+                    original
+                }
+                chain.proceed(request)
+            }
             .addInterceptor(logging)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)

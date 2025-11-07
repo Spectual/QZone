@@ -70,19 +70,9 @@ fun SurveyScreen(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = survey?.title ?: "", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = survey?.description ?: "", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(24.dp))
         if (question != null) {
             Text(text = question.content, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            if (question.required) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Required",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
             Spacer(modifier = Modifier.height(16.dp))
             QuestionContent(
                 questionId = question.id,

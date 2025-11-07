@@ -172,7 +172,6 @@ private fun SurveyCard(
         Column(modifier = Modifier.padding(20.dp)) {
             Text(text = survey.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = survey.description, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.LocationOn, contentDescription = null)

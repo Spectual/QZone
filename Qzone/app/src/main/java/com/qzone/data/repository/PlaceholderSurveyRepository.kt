@@ -1,9 +1,13 @@
 package com.qzone.data.repository
 
+import android.util.Log
 import com.qzone.data.model.Survey
 import com.qzone.data.model.UserLocation
+import com.qzone.data.placeholder.MockSurveyPayload
 import com.qzone.data.placeholder.PlaceholderDataSource
 import com.qzone.domain.repository.SurveyRepository
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,29 +18,17 @@ class PlaceholderSurveyRepository : SurveyRepository {
     private val completedIds = mutableSetOf<String>()
     private val surveysFlow = MutableStateFlow(applyCompletion(PlaceholderDataSource.sampleSurveys()))
 
+    init {
+        logMockSurveyJson()
+    }
+
     override val nearbySurveys: Flow<List<Survey>> = surveysFlow.asStateFlow()
 
     override suspend fun refreshNearby(userLocation: UserLocation?, radiusMeters: Int) {
-        // Simulate network delay for UI preview/testing purposes.
         delay(400)
-        
+
         val allSurveys = PlaceholderDataSource.sampleSurveys()
-        
-        val filteredSurveys = if (userLocation != null) {
-            // Calculate distance for each survey and filter by radius
-            allSurveys
-                .map { survey ->
-                    val distance = userLocation.distanceTo(survey.latitude, survey.longitude)
-                    survey.copy(distanceMeters = distance)
-                }
-                .filter { it.distanceMeters!! <= radiusMeters }
-                .sortedBy { it.distanceMeters }
-        } else {
-            // No location available, return all surveys
-            allSurveys
-        }
-        
-        surveysFlow.value = applyCompletion(filteredSurveys)
+        surveysFlow.value = applyCompletion(allSurveys)
     }
 
     override suspend fun getSurveyById(id: String): Survey? {
@@ -55,5 +47,18 @@ class PlaceholderSurveyRepository : SurveyRepository {
         return source.map { survey ->
             if (completedIds.contains(survey.id)) survey.copy(isCompleted = true) else survey
         }
+    }
+
+    private fun logMockSurveyJson() {
+        val payload: MockSurveyPayload = PlaceholderDataSource.mockSurveyPayload()
+        val adapter = moshi.adapter(MockSurveyPayload::class.java)
+        Log.d(TAG, "Mock survey payload: ${adapter.toJson(payload)}")
+    }
+
+    companion object {
+        private const val TAG = "PlaceholderSurveyRepo"
+        private val moshi: Moshi = Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
     }
 }

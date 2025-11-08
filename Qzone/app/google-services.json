@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "33786789573",
+    "project_id": "qzone-7ce08",
+    "storage_bucket": "qzone-7ce08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33786789573:android:37451c2790209b03923aac",
+        "android_client_info": {
+          "package_name": "com.qzone.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "33786789573-l7gble3mmtjl57nm5gm850s52n2ngp40.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzOeoYQMogwIu_8FWDhdEf7dXzeV7-o-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "33786789573-l7gble3mmtjl57nm5gm850s52n2ngp40.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

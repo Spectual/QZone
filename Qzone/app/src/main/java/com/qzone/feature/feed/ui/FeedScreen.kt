@@ -3,7 +3,6 @@ package com.qzone.feature.feed.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.PlaylistAddCheck
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,7 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.qzone.data.model.Survey
-import com.qzone.data.model.SurveyCategory
 import com.qzone.feature.feed.FeedUiState
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -175,27 +172,14 @@ private fun SurveyCard(
         Column(modifier = Modifier.padding(20.dp)) {
             Text(text = survey.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.PlaylistAddCheck, contentDescription = null)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(text = survey.subtitle, style = MaterialTheme.typography.bodyMedium)
-            }
             Spacer(modifier = Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.LocationOn, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(text = survey.locationLabel, style = MaterialTheme.typography.bodySmall)
-                survey.distanceMeters?.let { distance ->
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "• ${formatDistance(distance)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                CategoryBadge(category = survey.category)
+                Text(
+                    text = String.format("%.4f, %.4f", survey.latitude, survey.longitude),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
             Spacer(modifier = Modifier.height(12.dp))
             Divider()
@@ -206,41 +190,7 @@ private fun SurveyCard(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = "${survey.estimatedMinutes} min",
-                    style = MaterialTheme.typography.bodySmall
-                )
             }
         }
-    }
-}
-
-@Composable
-private fun CategoryBadge(category: SurveyCategory) {
-    val label = when (category) {
-        SurveyCategory.EXPERIENCE -> "Experience"
-        SurveyCategory.TRANSPORT -> "Transport"
-        SurveyCategory.FOOD -> "Food"
-        SurveyCategory.EVENT -> "Event"
-        SurveyCategory.LIFESTYLE -> "Lifestyle"
-        SurveyCategory.OTHER -> "General"
-    }
-    Box(
-        modifier = Modifier
-            .background(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                shape = MaterialTheme.shapes.small
-            )
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    ) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium)
-    }
-}
-
-private fun formatDistance(meters: Int): String {
-    return when {
-        meters < 1000 -> "${meters}m"
-        else -> String.format("%.1fkm", meters / 1000.0)
     }
 }

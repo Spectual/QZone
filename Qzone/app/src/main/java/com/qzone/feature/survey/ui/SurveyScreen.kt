@@ -38,7 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.composed
-import com.qzone.data.model.SurveyQuestionType
+import com.qzone.data.model.SurveyOption
 import com.qzone.feature.survey.SurveyUiState
 import kotlinx.coroutines.flow.StateFlow
 
@@ -70,17 +70,14 @@ fun SurveyScreen(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = survey?.title ?: "", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = survey?.subtitle ?: "", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(24.dp))
         if (question != null) {
-            Text(text = question.prompt, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(text = question.content, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(16.dp))
             QuestionContent(
                 questionId = question.id,
                 type = question.type,
                 options = question.options,
-                helper = question.helperText,
                 selectedOptions = uiState.answers[question.id].orEmpty(),
                 onAnswerChanged = onAnswerChanged
             )
@@ -128,42 +125,44 @@ fun SurveyScreen(
 @Composable
 private fun QuestionContent(
     questionId: String,
-    type: SurveyQuestionType,
-    options: List<String>,
-    helper: String?,
+    type: String,
+    options: List<SurveyOption>?,
     selectedOptions: List<String>,
     onAnswerChanged: (questionId: String, answer: String, toggle: Boolean) -> Unit
 ) {
-    when (type) {
-        SurveyQuestionType.SINGLE_CHOICE, SurveyQuestionType.RATING -> {
+    when (type.lowercase()) {
+        "single" -> {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                options.forEach { option ->
+                options.orEmpty().forEach { option ->
                     SingleSelectOption(
-                        text = option,
-                        selected = selectedOptions.contains(option),
-                        onClick = { onAnswerChanged(questionId, option, false) }
+                        text = option.content,
+                        selected = selectedOptions.contains(option.content),
+                        onClick = { onAnswerChanged(questionId, option.content, false) }
                     )
                 }
             }
         }
-        SurveyQuestionType.MULTI_CHOICE -> {
+        "multiple" -> {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                options.forEach { option ->
+                options.orEmpty().forEach { option ->
                     SingleSelectOption(
-                        text = option,
-                        selected = selectedOptions.contains(option),
-                        onClick = { onAnswerChanged(questionId, option, true) }
+                        text = option.content,
+                        selected = selectedOptions.contains(option.content),
+                        onClick = { onAnswerChanged(questionId, option.content, true) }
                     )
                 }
             }
         }
-        SurveyQuestionType.SHORT_TEXT -> {
+        "text" -> {
             OutlinedTextField(
                 value = selectedOptions.firstOrNull().orEmpty(),
                 onValueChange = { value -> onAnswerChanged(questionId, value, false) },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = helper?.let { { Text(it) } }
+                placeholder = { Text("Enter your response") }
             )
+        }
+        else -> {
+            Text(text = "Unsupported question type: ${type}", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

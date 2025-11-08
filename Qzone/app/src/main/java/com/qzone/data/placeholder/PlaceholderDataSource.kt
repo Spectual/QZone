@@ -1,151 +1,32 @@
 package com.qzone.data.placeholder
 
-import com.qzone.data.model.*
+import com.qzone.data.model.Survey
+import com.qzone.data.model.SurveyHistoryItem
+import com.qzone.data.model.SurveyOption
+import com.qzone.data.model.SurveyQuestion
+import com.qzone.data.model.UserProfile
+import com.qzone.data.model.Reward
+import com.qzone.data.model.RewardRedemption
+import com.qzone.data.model.RedemptionStatus
 
 object PlaceholderDataSource {
 
     fun sampleSurveys(): List<Survey> = listOf(
-        Survey(
-            id = "survey_city_park",
-            title = "City Park Feedback",
-            subtitle = "Share your thoughts about Boston Common",
-            category = SurveyCategory.EXPERIENCE,
-            locationLabel = "Boston Common",
-            latitude = 42.3551,
-            longitude = -71.0656,
-            points = 30,
-            distanceMeters = 320,
-            estimatedMinutes = 4,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "How satisfied are you with the cleanliness of Boston Common?",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Satisfied", "Neutral", "Dissatisfied")
-                ),
-                //test
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "What could we improve during your next visit?",
-                    type = SurveyQuestionType.SHORT_TEXT,
-                    helperText = "Type your answer"
-                ),
-                SurveyQuestion(
-                    id = "q3",
-                    prompt = "Rate the park amenities",
-                    type = SurveyQuestionType.RATING,
-                    options = listOf("1", "2", "3", "4", "5")
-                )
-            )
-        ),
-        Survey(
-            id = "survey_bu_transport",
-            title = "BU Student Transportation",
-            subtitle = "Tell us how you commute",
-            category = SurveyCategory.TRANSPORT,
-            locationLabel = "BU Central",
-            latitude = 42.3505,
-            longitude = -71.1054,
-            points = 25,
-            estimatedMinutes = 5,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "Primary commute mode",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Bus", "Train", "Bike", "Walk", "Rideshare")
-                ),
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "Select issues you've faced recently",
-                    type = SurveyQuestionType.MULTI_CHOICE,
-                    options = listOf("Delays", "Crowding", "Cost", "Accessibility", "Other")
-                ),
-                SurveyQuestion(
-                    id = "q3",
-                    prompt = "Describe your ideal commute",
-                    type = SurveyQuestionType.SHORT_TEXT,
-                    helperText = "Optional"
-                )
-            )
-        ),
-        Survey(
-            id = "survey_north_end_food",
-            title = "North End Italian Food Review",
-            subtitle = "Help us rank local classics",
-            category = SurveyCategory.FOOD,
-            locationLabel = "North End",
-            latitude = 42.3647,
-            longitude = -71.0542,
-            points = 25,
-            estimatedMinutes = 3,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "Rate your latest dining experience",
-                    type = SurveyQuestionType.RATING,
-                    options = (1..5).map(Int::toString)
-                ),
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "What dish would you recommend?",
-                    type = SurveyQuestionType.SHORT_TEXT
-                )
-            )
-        ),
-        Survey(
-            id = "survey_marathon",
-            title = "Boston Marathon Experience",
-            subtitle = "Tell us about race day",
-            category = SurveyCategory.EVENT,
-            locationLabel = "Newbury St",
-            latitude = 42.3503,
-            longitude = -71.0810,
-            points = 15,
-            estimatedMinutes = 6,
-            questions = listOf(
-                SurveyQuestion(
-                    id = "q1",
-                    prompt = "Were you a runner, spectator, or volunteer?",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Runner", "Spectator", "Volunteer")
-                ),
-                SurveyQuestion(
-                    id = "q2",
-                    prompt = "Would you participate again?",
-                    type = SurveyQuestionType.SINGLE_CHOICE,
-                    options = listOf("Yes", "Maybe", "No")
-                )
-            )
-        )
+        mockSurveyPayload().toSurvey(id = "survey_campus_dining")
     )
 
     fun sampleHistory(): List<SurveyHistoryItem> = listOf(
         SurveyHistoryItem(
             id = "history_1",
-            surveyId = "survey_city_park",
-            title = "City Park Feedback",
-            completedAt = "23/01/23",
-            pointsEarned = 30,
-            locationLabel = "Boston, MA"
-        ),
-        SurveyHistoryItem(
-            id = "history_2",
-            surveyId = "survey_bu_transport",
-            title = "BU Student Transportation",
-            completedAt = "23/01/23",
-            pointsEarned = 25,
-            locationLabel = "Boston, MA"
-        ),
-        SurveyHistoryItem(
-            id = "history_3",
-            surveyId = "survey_north_end_food",
-            title = "North End Italian Food Review",
-            completedAt = "23/01/23",
-            pointsEarned = 25,
-            locationLabel = "Boston, MA"
+            surveyId = "survey_campus_dining",
+            title = "Campus Dining Satisfaction",
+            completedAt = "03/15/24",
+            pointsEarned = 10,
+            locationLabel = "Campus Dining"
         )
     )
+
+    fun mockSurveyPayload(): MockSurveyPayload = MockSurveyPayloadFactory.englishCampusDiningSurvey()
 
     fun sampleRewards(): List<Reward> = listOf(
         Reward(
@@ -204,5 +85,30 @@ object PlaceholderDataSource {
                 status = RedemptionStatus.REDEEMED
             )
         )
+    )
+}
+
+private fun MockSurveyPayload.toSurvey(id: String): Survey {
+    return Survey(
+        id = id,
+        title = title,
+        description = description,
+        latitude = latitude,
+        longitude = longitude,
+        points = points,
+        questions = questions.mapIndexed { index, question ->
+            SurveyQuestion(
+                id = "q${index + 1}",
+                type = question.type,
+                content = question.content,
+                required = question.required,
+                options = question.options?.map { option ->
+                    SurveyOption(
+                        content = option.content,
+                        label = option.label
+                    )
+                }
+            )
+        }
     )
 }

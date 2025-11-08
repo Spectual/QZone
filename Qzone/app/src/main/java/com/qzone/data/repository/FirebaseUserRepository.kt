@@ -11,6 +11,7 @@ import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyHistoryItem
 import com.qzone.data.model.UserProfile
 import com.qzone.data.network.QzoneApiClient
+import com.qzone.data.network.AuthTokenProvider
 import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
 import com.qzone.data.network.model.RegisterRequest
@@ -84,6 +85,7 @@ class FirebaseUserRepository(
                     refreshToken = data.refreshToken
                 )
             )
+            AuthTokenProvider.accessToken = data.accessToken
             Log.d(TAG, "Access token (register): ${data.accessToken}")
             updateUserFromFirebase(firebaseUser)
             AuthResult(success = true)
@@ -125,7 +127,7 @@ class FirebaseUserRepository(
             title = survey.title,
             completedAt = formatter.format(Date()),
             pointsEarned = survey.points,
-            locationLabel = survey.locationLabel
+            locationLabel = survey.title
         )
         val updated = current.copy(
             totalPoints = current.totalPoints + survey.points,
@@ -138,6 +140,7 @@ class FirebaseUserRepository(
     override suspend fun signOut() {
         auth.signOut()
         tokens.emit(null)
+        AuthTokenProvider.accessToken = null
         _currentUser.emit(DEFAULT_PROFILE)
     }
 
@@ -159,6 +162,7 @@ class FirebaseUserRepository(
                 refreshToken = data.refreshToken
             )
         )
+        AuthTokenProvider.accessToken = data.accessToken
         Log.d(TAG, "Access token: ${data.accessToken}")
         updateUserFromFirebase(firebaseUser)
         return AuthResult(success = true)

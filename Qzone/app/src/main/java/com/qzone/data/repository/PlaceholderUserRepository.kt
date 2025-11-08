@@ -86,7 +86,7 @@ class PlaceholderUserRepository : UserRepository {
             title = survey.title,
             completedAt = formatter.format(Date()),
             pointsEarned = survey.points,
-            locationLabel = survey.locationLabel
+            locationLabel = survey.title
         )
         val current = userFlow.value
         storedProfile = current.copy(

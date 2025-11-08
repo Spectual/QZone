@@ -31,7 +31,8 @@ class LocationRepositoryImpl(
         LocationServices.getFusedLocationProviderClient(context)
 
     private val geocoder: Geocoder? = if (Geocoder.isPresent()) {
-        Geocoder(context, Locale.getDefault())
+        // Force English for address results so UI shows English location text
+        Geocoder(context, Locale.ENGLISH)
     } else null
 
     override fun hasLocationPermission(): Boolean {

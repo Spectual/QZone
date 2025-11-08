@@ -98,7 +98,7 @@ private fun MockSurveyPayload.toSurvey(id: String): Survey {
         points = points,
         questions = questions.mapIndexed { index, question ->
             SurveyQuestion(
-                id = "q${index + 1}",
+                id = question.id,
                 type = question.type,
                 content = question.content,
                 required = question.required,

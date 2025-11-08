@@ -1,6 +1,7 @@
 package com.qzone.data.placeholder
 
 data class MockSurveyPayload(
+    val id : String,
     val title: String,
     val description: String,
     val latitude: Double,
@@ -10,6 +11,7 @@ data class MockSurveyPayload(
 )
 
 data class MockSurveyQuestion(
+    val id: String,
     val type: String,
     val content: String,
     val required: Boolean,
@@ -24,6 +26,7 @@ data class MockSurveyOption(
 object MockSurveyPayloadFactory {
     fun englishCampusDiningSurvey(): MockSurveyPayload {
         return MockSurveyPayload(
+            id = "gshRSaqwS3EHOjvqZmKs",
             title = "Campus Dining Satisfaction Survey",
             description = "Help us improve the campus dining experience by sharing your honest feedback.",
             latitude = 42.3505,
@@ -31,6 +34,7 @@ object MockSurveyPayloadFactory {
             points = 10,
             questions = listOf(
                 MockSurveyQuestion(
+                    id = "q8iEr7xgQ6D9WB2kSjlC",
                     type = "single",
                     content = "How satisfied are you with the overall campus dining experience?",
                     required = true,
@@ -42,6 +46,7 @@ object MockSurveyPayloadFactory {
                     )
                 ),
                 MockSurveyQuestion(
+                    id = "BkME6VQnkypkERe56qpa",
                     type = "multiple",
                     content = "Which aspects need improvement? (Select all that apply)",
                     required = false,
@@ -53,6 +58,7 @@ object MockSurveyPayloadFactory {
                     )
                 ),
                 MockSurveyQuestion(
+                    id = "GICxxXWpDq4E6tzOhvz5",
                     type = "text",
                     content = "What suggestions do you have for the dining services?",
                     required = false,

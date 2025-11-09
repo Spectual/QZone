@@ -1,36 +1,36 @@
-# 问卷系统 API 接口文档
+# Survey System API Documentation
 
-## 基础信息
+## Basic Information
 
-接口网址：http://52.14.58.34:8082/swagger-ui/index.html
+API URL: http://52.14.58.34:8082/swagger-ui/index.html
 - **Base URL**: `http://52.14.58.34:8082`
 - **Content-Type**: `application/json`
-- **认证方式**: Bearer Token (在请求头中添加 `Authorization: Bearer {accessToken}`)
+- **Authentication**: Bearer Token (Add `Authorization: Bearer {accessToken}` in request header)
 
-### 统一响应格式
+### Unified Response Format
 
-所有接口返回统一的 `Result<T>` 格式：
+All APIs return a unified `Result<T>` format:
 
 ```json
 {
-  "code": 1, // 1表示成功，0或其他数字表示失败
-  "msg": "成功", // 错误信息（失败时）
-  "data": {}, // 响应数据（成功时）
-  "success": true // 是否成功
+  "code": 1, // 1 indicates success, 0 or other numbers indicate failure
+  "msg": "success", // Error message (when failed)
+  "data": {}, // Response data (when successful)
+  "success": true // Whether the operation was successful
 }
 ```
 
 ---
 
-## 一、用户接口 (`/api/user`) ⭐ 核心 API
+## I. User APIs (`/api/user`) ⭐ Core APIs
 
-### 1.1 用户登录
+### 1.1 User Login
 
-**接口**: `POST /api/user/login`
+**Endpoint**: `POST /api/user/login`
 
-**描述**: 用户登录（支持 Firebase 认证）
+**Description**: User login (Firebase authentication supported)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -38,7 +38,7 @@
 }
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -54,13 +54,13 @@
 
 ---
 
-### 1.2 用户注册
+### 1.2 User Registration
 
-**接口**: `POST /api/user/register`
+**Endpoint**: `POST /api/user/register`
 
-**描述**: 用户注册（支持 Firebase 认证）
+**Description**: User registration (Firebase authentication supported)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -70,17 +70,17 @@
 }
 ```
 
-**响应**: 同登录接口（新用户默认积分 0，段位"青铜"）
+**Response**: Same as login endpoint (New users start with 0 points and "Bronze" tier)
 
 ---
 
-### 1.3 第三方登录（支持 Google/Facebook/Twitter）
+### 1.3 Third-Party Login (Google/Facebook/Twitter Support)
 
-**接口**: `POST /api/user/third-party`
+**Endpoint**: `POST /api/user/third-party`
 
-**描述**: 通过第三方账号登录（支持 Google、Facebook、Twitter，通过 Firebase）
+**Description**: Login via third-party accounts (Google, Facebook, Twitter supported through Firebase)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -88,24 +88,24 @@
 }
 ```
 
-**说明**:
+**Notes**:
 
-- 支持 Google、Facebook、Twitter 等第三方登录
-- 所有第三方登录都通过 Firebase 返回统一的 ID Token
-- 首次登录时自动注册新用户
-- 从 token 中自动提取用户信息（邮箱、用户名、头像）
+- Supports Google, Facebook, Twitter, and other third-party logins
+- All third-party logins return a unified ID Token through Firebase
+- New users are automatically registered on first login
+- User information (email, username, avatar) is automatically extracted from the token
 
-**响应**: 同登录接口
+**Response**: Same as login endpoint
 
 ---
 
-### 1.4 发送忘记密码邮件（缺少忘记密码界面）
+### 1.4 Send Forgot Password Email (Missing forgot password UI)
 
-**接口**: `POST /api/user/forgetSend`
+**Endpoint**: `POST /api/user/forgetSend`
 
-**描述**: 发送忘记密码邮件
+**Description**: Send forgot password email
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -113,7 +113,7 @@
 }
 ```
 
-**响应**:
+**Response**:
 
 ```json
 {
@@ -126,13 +126,13 @@
 
 ---
 
-### 1.5 重置密码
+### 1.5 Reset Password
 
-**接口**: `POST /api/user/resetPassword`
+**Endpoint**: `POST /api/user/resetPassword`
 
-**描述**: 重置密码
+**Description**: Reset password
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -141,17 +141,17 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 1.6 刷新 Token
+### 1.6 Refresh Token
 
-**接口**: `POST /api/user/refresh`
+**Endpoint**: `POST /api/user/refresh`
 
-**描述**: 刷新访问令牌
+**Description**: Refresh access token
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -159,19 +159,19 @@
 }
 ```
 
-**响应**: 同登录接口
+**Response**: Same as login endpoint
 
 ---
 
-### 1.7 修改用户名
+### 1.7 Update Username
 
-**接口**: `PUT /api/user/name`
+**Endpoint**: `PUT /api/user/name`
 
-**描述**: 修改用户名
+**Description**: Update username
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -179,37 +179,37 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 1.8 修改邮箱
+### 1.8 Update Email
 
-**接口**: `PUT /api/user/email`
+**Endpoint**: `PUT /api/user/email`
 
-**描述**: 修改邮箱
+**Description**: Update email address
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求体**:
+**Request Body**:
 
 ```json
 "newemail@example.com"
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 1.9 修改密码（没做）
+### 1.9 Change Password (Not Implemented)
 
-**接口**: `PUT /api/user/password`
+**Endpoint**: `PUT /api/user/password`
 
-**描述**: 修改密码（注意：使用 Firebase 后此功能已禁用）
+**Description**: Change password (Note: This feature is disabled after Firebase integration)
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -218,47 +218,47 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 1.10 上传头像
+### 1.10 Upload Avatar
 
-**接口**: `POST /api/user/avatar`
+**Endpoint**: `POST /api/user/avatar`
 
-**描述**: 上传用户头像
+**Description**: Upload user avatar
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求类型**: `multipart/form-data`
+**Content Type**: `multipart/form-data`
 
-**请求参数**: `file` (MultipartFile)
+**Request Parameter**: `file` (MultipartFile)
 
-**响应**: 标准响应格式
-
----
-
-### 1.11 用户登出
-
-**接口**: `POST /api/user/logout`
-
-**描述**: 用户登出
-
-**请求头**: `Authorization: Bearer {accessToken}`
-
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 1.12 获取个人信息
+### 1.11 User Logout
 
-**接口**: `GET /api/user/user/me`
+**Endpoint**: `POST /api/user/logout`
 
-**描述**: 获取用户个人信息（包括积分和段位）
+**Description**: User logout
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**响应示例**:
+**Response**: Standard response format
+
+---
+
+### 1.12 Get User Profile
+
+**Endpoint**: `GET /api/user/user/me`
+
+**Description**: Get user profile information (including points and rank)
+
+**Request Header**: `Authorization: Bearer {accessToken}`
+
+**Response Example**:
 
 ```json
 {
@@ -270,7 +270,7 @@
     "email": "user@example.com",
     "avatarUrl": "/avatars/xxx.jpg",
     "currentPoints": 150,
-    "rank": "白银",
+    "rank": "Silver",
     "pointsToNextRank": 150,
     "createTime": "2024-01-01 10:00:00",
     "updateTime": "2024-01-01 10:00:00"
@@ -281,15 +281,15 @@
 
 ---
 
-### 1.13 验证用户存在
+### 1.13 Verify User Existence
 
-**接口**: `POST /api/user/{userId}/exist`
+**Endpoint**: `POST /api/user/{userId}/exist`
 
-**描述**: 验证用户是否存在
+**Description**: Verify if a user exists
 
-**路径参数**: `userId` (String) - 用户 documentId
+**Path Parameter**: `userId` (String) - User documentId
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -302,27 +302,27 @@
 
 ---
 
-### 1.14 查询用户（内部使用）
+### 1.14 Query User (Internal Use)
 
-**接口**: `GET /api/user/{id}`
+**Endpoint**: `GET /api/user/{id}`
 
-**描述**: 根据 documentId 查询用户（内部使用）
+**Description**: Query user by documentId (internal use)
 
-**路径参数**: `id` (String) - 用户 documentId
+**Path Parameter**: `id` (String) - User documentId
 
-**响应**: User 实体对象
+**Response**: User entity object
 
 ---
 
-## 二、管理员接口 (`/api/admin`) ⭐ 核心 API
+## II. Admin APIs (`/api/admin`) ⭐ Core APIs
 
-### 2.1 管理员登录
+### 2.1 Admin Login
 
-**接口**: `POST /api/admin/login`
+**Endpoint**: `POST /api/admin/login`
 
-**描述**: 管理员登录（支持 Firebase 认证）
+**Description**: Admin login (Firebase authentication supported)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -330,7 +330,7 @@
 }
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -349,13 +349,13 @@
 
 ---
 
-### 2.2 管理员注册
+### 2.2 Admin Registration
 
-**接口**: `POST /api/admin/register`
+**Endpoint**: `POST /api/admin/register`
 
-**描述**: 管理员注册（支持 Firebase 认证）
+**Description**: Admin registration (Firebase authentication supported)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -365,17 +365,17 @@
 }
 ```
 
-**响应**: 同登录接口
+**Response**: Same as login endpoint
 
 ---
 
-### 2.3 第三方登录（支持 Google/Facebook/Twitter）
+### 2.3 Third-Party Login (Google/Facebook/Twitter Support)
 
-**接口**: `POST /api/admin/third-party`
+**Endpoint**: `POST /api/admin/third-party`
 
-**描述**: 通过第三方账号登录（支持 Google、Facebook、Twitter，通过 Firebase）
+**Description**: Login via third-party accounts (Google, Facebook, Twitter supported through Firebase)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -383,24 +383,24 @@
 }
 ```
 
-**说明**:
+**Notes**:
 
-- 支持 Google、Facebook、Twitter 等第三方登录
-- 所有第三方登录都通过 Firebase 返回统一的 ID Token
-- 首次登录时自动注册新管理员
-- 从 token 中自动提取用户信息（邮箱、用户名、头像）
+- Supports Google, Facebook, Twitter, and other third-party logins
+- All third-party logins return a unified ID Token through Firebase
+- New admin users are automatically registered on first login
+- User information (email, username, avatar) is automatically extracted from the token
 
-**响应**: 同登录接口
+**Response**: Same as login endpoint
 
 ---
 
-### 2.4 发送忘记密码邮件
+### 2.4 Send Forgot Password Email
 
 **接口**: `POST /api/admin/forgetSend`
 
-**描述**: 发送忘记密码邮件
+**Description**: Send forgot password email
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -408,17 +408,17 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 2.5 重置密码
+### 2.5 Reset Password
 
-**接口**: `POST /api/admin/resetPassword`
+**Endpoint**: `POST /api/admin/resetPassword`
 
-**描述**: 重置密码
+**Description**: Reset password
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -427,17 +427,17 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 2.6 刷新 Token
+### 2.6 Refresh Token
 
-**接口**: `POST /api/admin/refresh`
+**Endpoint**: `POST /api/admin/refresh`
 
-**描述**: 刷新访问令牌
+**Description**: Refresh access token
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -445,19 +445,19 @@
 }
 ```
 
-**响应**: 同登录接口
+**Response**: Same as login endpoint
 
 ---
 
-### 2.7 修改管理员用户名
+### 2.7 Update Admin Username
 
-**接口**: `PUT /api/admin/name`
+**Endpoint**: `PUT /api/admin/name`
 
-**描述**: 修改管理员用户名
+**Description**: Update admin username
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -465,37 +465,37 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 2.8 修改管理员邮箱
+### 2.8 Update Admin Email
 
-**接口**: `PUT /api/admin/email`
+**Endpoint**: `PUT /api/admin/email`
 
-**描述**: 修改管理员邮箱
+**Description**: Update admin email address
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求体**:
+**Request Body**:
 
 ```json
 "newemail@example.com"
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 2.9 修改管理员密码
+### 2.9 Change Admin Password
 
-**接口**: `PUT /api/admin/password`
+**Endpoint**: `PUT /api/admin/password`
 
-**描述**: 修改管理员密码（注意：使用 Firebase 后此功能已禁用）
+**Description**: Change admin password (Note: This feature is disabled after Firebase integration)
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -504,47 +504,47 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 2.10 上传管理员头像
+### 2.10 Upload Admin Avatar
 
-**接口**: `POST /api/admin/avatar`
+**Endpoint**: `POST /api/admin/avatar`
 
-**描述**: 上传管理员头像
+**Description**: Upload admin avatar
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**请求类型**: `multipart/form-data`
+**Content Type**: `multipart/form-data`
 
-**请求参数**: `file` (MultipartFile)
+**Request Parameter**: `file` (MultipartFile)
 
-**响应**: 标准响应格式
-
----
-
-### 2.11 管理员登出
-
-**接口**: `POST /api/admin/logout`
-
-**描述**: 管理员登出
-
-**请求头**: `Authorization: Bearer {accessToken}`
-
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 2.12 获取管理员个人信息
+### 2.11 Admin Logout
 
-**接口**: `GET /api/admin/admin/me`
+**Endpoint**: `POST /api/admin/logout`
 
-**描述**: 获取管理员个人信息
+**Description**: Admin logout
 
-**请求头**: `Authorization: Bearer {accessToken}`
+**Request Header**: `Authorization: Bearer {accessToken}`
 
-**响应示例**:
+**Response**: Standard response format
+
+---
+
+### 2.12 Get Admin Profile
+
+**Endpoint**: `GET /api/admin/admin/me`
+
+**Description**: Get admin profile information
+
+**Request Header**: `Authorization: Bearer {accessToken}`
+
+**Response Example**:
 
 ```json
 {
@@ -564,48 +564,48 @@
 
 ---
 
-## 三、问卷接口 (`/api/survey`) ⭐ 核心 API
+## III. Survey APIs (`/api/survey`) ⭐ Core APIs
 
-### 3.1 创建问卷
+### 3.1 Create Survey
 
-**接口**: `POST /api/survey/create`
+**Endpoint**: `POST /api/survey/create`
 
-**描述**: 创建问卷（包含问题、选项）
+**Description**: Create a survey (including questions and options)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
-  "title": "校园餐厅满意度调查",
-  "description": "为了提升校园餐厅的服务质量，我们诚挚邀请您参与本次满意度调查。",
+  "title": "Campus Dining Hall Satisfaction Survey",
+  "description": "We sincerely invite you to participate in this satisfaction survey to improve our campus dining services.",
   "latitude": 42.3505,
   "longitude": -71.1054,
-  "points": 10, // 问卷积分（可选，默认为0）
+  "points": 10, // Survey points (optional, default is 0)
   "questions": [
     {
       "type": "single",
-      "content": "您对校园餐厅的整体满意度如何？",
+      "content": "How satisfied are you with the overall dining hall experience?",
       "required": true,
       "options": [
-        { "content": "非常满意", "label": "A" },
-        { "content": "满意", "label": "B" },
-        { "content": "一般", "label": "C" },
-        { "content": "不满意", "label": "D" }
+        { "content": "Very Satisfied", "label": "A" },
+        { "content": "Satisfied", "label": "B" },
+        { "content": "Neutral", "label": "C" },
+        { "content": "Dissatisfied", "label": "D" }
       ]
     },
     {
       "type": "multiple",
-      "content": "您认为餐厅哪些方面需要改进？（可多选）",
+      "content": "Which aspects of the dining hall need improvement? (Multiple choices allowed)",
       "required": false,
       "options": [
-        { "content": "菜品口味", "label": "A" },
-        { "content": "菜品多样性", "label": "B" },
-        { "content": "价格合理性", "label": "C" }
+        { "content": "Food Taste", "label": "A" },
+        { "content": "Food Variety", "label": "B" },
+        { "content": "Price Reasonability", "label": "C" }
       ]
     },
     {
       "type": "text",
-      "content": "请提供您对餐厅的改进建议：",
+      "content": "Please provide your suggestions for dining hall improvement:",
       "required": false,
       "options": null
     }
@@ -613,7 +613,7 @@
 }
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -626,50 +626,50 @@
 
 ---
 
-### 3.2 更新问卷
+### 3.2 Update Survey
 
-**接口**: `PUT /api/survey/update`
+**Endpoint**: `PUT /api/survey/update`
 
-**描述**: 更新问卷信息
+**Description**: Update survey information
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
   "id": 123,
-  "title": "更新的问卷标题",
-  "description": "更新的描述",
+  "title": "Updated Survey Title",
+  "description": "Updated Description",
   "latitude": 42.3505,
   "longitude": -71.1054,
   "points": 20
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 3.3 删除问卷
+### 3.3 Delete Survey
 
-**接口**: `DELETE /api/survey/{id}`
+**Endpoint**: `DELETE /api/survey/{id}`
 
-**描述**: 根据 documentId 删除问卷
+**Description**: Delete survey by documentId
 
-**路径参数**: `id` (String) - 问卷 documentId
+**Path Parameter**: `id` (String) - Survey documentId
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 3.4 根据 ID 获取问卷
+### 3.4 Get Survey by ID
 
-**接口**: `GET /api/survey/{id}`
+**Endpoint**: `GET /api/survey/{id}`
 
-**描述**: 根据 documentId 获取问卷详情（包含问题和选项）
+**Description**: Get survey details by documentId (including questions and options)
 
-**路径参数**: `id` (String) - 问卷 documentId
+**Path Parameter**: `id` (String) - Survey documentId
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -677,8 +677,8 @@
   "msg": null,
   "data": {
     "documentId": "survey-doc-id",
-    "title": "校园餐厅满意度调查",
-    "description": "问卷描述",
+    "title": "Campus Dining Hall Satisfaction Survey",
+    "description": "Survey description",
     "latitude": 42.3505,
     "longitude": -71.1054,
     "questionNumber": 3,
@@ -688,13 +688,13 @@
       {
         "documentId": "question-doc-id",
         "type": "single",
-        "content": "问题内容",
+        "content": "Question content",
         "required": true,
         "options": [
           {
             "documentId": "option-doc-id",
             "label": "A",
-            "content": "选项内容"
+            "content": "Option content"
           }
         ]
       }
@@ -706,40 +706,40 @@
 
 ---
 
-### 3.5 批量获取问卷
+### 3.5 Batch Get Surveys
 
-**接口**: `POST /api/survey/list`
+**Endpoint**: `POST /api/survey/list`
 
-**描述**: 根据多个 documentId 批量获取问卷
+**Description**: Get multiple surveys by their documentIds
 
-**请求体**:
+**Request Body**:
 
 ```json
 ["survey-doc-id-1", "survey-doc-id-2", "survey-doc-id-3"]
 ```
 
-**响应**: Survey 对象数组
+**Response**: Array of Survey objects
 
 ---
 
-### 3.6 分页查询问卷（暂时用不了）
+### 3.6 Paginated Survey Query (Currently Unavailable)
 
-**接口**: `POST /api/survey/page`
+**Endpoint**: `POST /api/survey/page`
 
-**描述**: 分页查询问卷列表
+**Description**: Get paginated list of surveys
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
   "page": 1,
   "pageSize": 10,
-  "title": "问卷标题（可选，模糊查询）",
+  "title": "Survey Title (optional, fuzzy search)",
   "status": "ACTIVE"
 }
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -750,8 +750,8 @@
     "records": [
       {
         "documentId": "survey-doc-id",
-        "title": "问卷标题",
-        "description": "问卷描述",
+        "title": "Survey Title",
+        "description": "Survey Description",
         "questionNumber": 5,
         "status": "ACTIVE",
         "points": 10
@@ -764,15 +764,15 @@
 
 ---
 
-### 3.7 获取问卷统计信息
+### 3.7 Get Survey Statistics
 
-**接口**: `GET /api/survey/{id}/stats`
+**Endpoint**: `GET /api/survey/{id}/stats`
 
-**描述**: 获取问卷统计数据
+**Description**: Get survey statistics
 
-**路径参数**: `id` (String) - 问卷 documentId
+**Path Parameter**: `id` (String) - Survey documentId
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -790,69 +790,69 @@
 
 ---
 
-### 3.8 批量删除问卷
+### 3.8 Batch Delete Surveys
 
-**接口**: `DELETE /api/survey/batch`
+**Endpoint**: `DELETE /api/survey/batch`
 
-**描述**: 批量删除问卷
+**Description**: Delete multiple surveys
 
-**请求体**:
+**Request Body**:
 
 ```json
 ["survey-doc-id-1", "survey-doc-id-2"]
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 3.9 变更问卷状态
+### 3.9 Change Survey Status
 
-**接口**: `PUT /api/survey/{id}/status`
+**Endpoint**: `PUT /api/survey/{id}/status`
 
-**描述**: 变更问卷状态
+**Description**: Change survey status
 
-**路径参数**: `id` (String) - 问卷 documentId
+**Path Parameter**: `id` (String) - Survey documentId
 
-**查询参数**: `status` (String) - 新状态（如：ACTIVE, INACTIVE）
+**Query Parameter**: `status` (String) - New status (e.g., ACTIVE, INACTIVE)
 
-**响应**: 标准响应格式
-
----
-
-### 3.10 获取问卷问题
-
-**接口**: `GET /api/survey/question/{id}`
-
-**描述**: 根据问题 documentId 获取问题列表
-
-**路径参数**: `id` (String) - 问题 documentId
-
-**响应**: Question 对象数组
+**Response**: Standard response format
 
 ---
 
-### 3.11 获取问题选项
+### 3.10 Get Survey Questions
 
-**接口**: `GET /api/survey/option/{id}`
+**Endpoint**: `GET /api/survey/question/{id}`
 
-**描述**: 根据问题 documentId 获取问题的所有选项
+**Description**: Get list of questions by question documentId
 
-**路径参数**: `id` (String) - 问题 documentId
+**Path Parameter**: `id` (String) - Question documentId
 
-**响应**: Option 对象数组
+**Response**: Array of Question objects
 
 ---
 
-## 四、回答接口 (`/api/response`) ⭐ 核心 API
+### 3.11 Get Question Options
 
-### 4.1 提交问卷回答
+**Endpoint**: `GET /api/survey/option/{id}`
 
-**接口**: `POST /api/response/`
+**Description**: Get all options for a question by question documentId
 
-**描述**: 提交问卷回答（完成问卷后会自动增加用户积分）
+**Path Parameter**: `id` (String) - Question documentId
 
-**请求体**:
+**Response**: Array of Option objects
+
+---
+
+## IV. Response APIs (`/api/response`) ⭐ Core APIs
+
+### 4.1 Submit Survey Response
+
+**Endpoint**: `POST /api/response/`
+
+**Description**: Submit survey response (user points will be automatically increased after completing the survey)
+
+**Request Body**:
 
 ```json
 [
@@ -869,38 +869,38 @@
   {
     "questionId": "question-doc-id-3",
     "selected": null,
-    "content": "这是一些建议..."
+    "content": "Here are some suggestions..."
   }
 ]
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
   "code": 1,
   "msg": null,
-  "data": "问卷回答提交成功",
+  "data": "Survey response submitted successfully",
   "success": true
 }
 ```
 
-**注意**:
+**Note**:
 
-- 首次完成问卷且问卷设置了积分时，会自动给用户增加积分
-- 积分规则见文档开头的积分系统说明
+- Points will be automatically added to the user when completing a survey for the first time and if the survey has points set
+- See the points system explanation at the beginning of the document for point rules
 
 ---
 
-### 4.2 查询回答详情
+### 4.2 Query Response Details
 
-**接口**: `POST /api/response/detail/{id}`
+**Endpoint**: `POST /api/response/detail/{id}`
 
-**描述**: 根据回答 documentId 查询回答详情
+**Description**: Query response details by response documentId
 
-**路径参数**: `id` (String) - 回答 documentId
+**Path Parameter**: `id` (String) - Response documentId
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -918,7 +918,7 @@
       {
         "documentId": "question-doc-id",
         "type": "single",
-        "content": "问题内容",
+        "content": "Question content",
         "answered": true,
         "selectedOptions": ["A"],
         "textContent": null
@@ -931,13 +931,13 @@
 
 ---
 
-### 4.3 查询用户回答列表
+### 4.3 Query User Response List
 
-**接口**: `POST /api/response/list`
+**Endpoint**: `POST /api/response/list`
 
-**描述**: 分页查询用户回答列表
+**Description**: Get paginated list of user responses
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -949,7 +949,7 @@
 }
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -979,15 +979,15 @@
 
 ---
 
-## 五、地理位置接口 (`/api/location`) （辅助功能）
+## V. Location APIs (`/api/location`) (Helper Functions)
 
-### 5.1 获取附近位置信息（POST）
+### 5.1 Get Nearby Locations (POST)
 
-**接口**: `POST /api/location/nearby`
+**Endpoint**: `POST /api/location/nearby`
 
-**描述**: 根据用户位置获取附近的问卷
+**Description**: Get nearby surveys based on user location
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -1001,7 +1001,7 @@
 }
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -1010,8 +1010,8 @@
   "data": [
     {
       "documentId": "survey-doc-id",
-      "title": "附近问卷",
-      "description": "问卷描述",
+      "title": "Nearby Survey",
+      "description": "Survey description",
       "latitude": 42.3505,
       "longitude": -71.1054,
       "distance": 0.5
@@ -1023,29 +1023,29 @@
 
 ---
 
-### 5.2 查询附近问卷（GET）
+### 5.2 Query Nearby Surveys (GET)
 
-**接口**: `GET /api/location/nearby`
+**Endpoint**: `GET /api/location/nearby`
 
-**描述**: 根据用户位置查询附近的问卷（GET 方式）
+**Description**: Query nearby surveys based on user location (GET method)
 
-**查询参数**:
+**Query Parameters**:
 
-- `userLat` (Double) - 用户纬度
-- `userLng` (Double) - 用户经度
-- `radiusKm` (Double) - 查询半径（公里）
+- `userLat` (Double) - User latitude
+- `userLng` (Double) - User longitude
+- `radiusKm` (Double) - Search radius (kilometers)
 
-**响应**: 同 POST 接口
+**Response**: Same as POST endpoint
 
 ---
 
-### 5.3 缓存问卷地理位置信息
+### 5.3 Cache Survey Location Information
 
-**接口**: `POST /api/location/cache`
+**Endpoint**: `POST /api/location/cache`
 
-**描述**: 缓存问卷地理位置信息
+**Description**: Cache survey location information
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -1055,29 +1055,29 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 5.4 移除问卷地理位置信息
+### 5.4 Remove Survey Location Information
 
-**接口**: `DELETE /api/location/{surveyId}`
+**Endpoint**: `DELETE /api/location/{surveyId}`
 
-**描述**: 移除问卷的地理位置缓存
+**Description**: Remove survey location information from cache
 
-**路径参数**: `surveyId` (String) - 问卷 documentId
+**Path Parameter**: `surveyId` (String) - Survey documentId
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 5.5 更新问卷地理位置信息
+### 5.5 Update Survey Location Information
 
-**接口**: `PUT /api/location/update`
+**Endpoint**: `PUT /api/location/update`
 
-**描述**: 更新问卷地理位置信息
+**Description**: Update survey location information
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -1087,19 +1087,19 @@
 }
 ```
 
-**响应**: 标准响应格式
+**Response**: Standard response format
 
 ---
 
-### 5.6 获取问卷地理位置信息
+### 5.6 Get Survey Location Information
 
-**接口**: `GET /api/location/{surveyId}`
+**Endpoint**: `GET /api/location/{surveyId}`
 
-**描述**: 获取问卷的地理位置信息
+**Description**: Get survey location information
 
-**路径参数**: `surveyId` (String) - 问卷 documentId
+**Path Parameter**: `surveyId` (String) - Survey documentId
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -1116,21 +1116,21 @@
 
 ---
 
-## 六、测试接口 (`/api/test`) （开发测试用）
+## VI. Test APIs (`/api/test`) (Development Testing)
 
-### 6.1 创建测试用户
+### 6.1 Create Test User
 
-**接口**: `POST /api/test/create-test-user`
+**Endpoint**: `POST /api/test/create-test-user`
 
-**描述**: 创建 Firebase 测试用户并获取自定义 Token（仅用于开发测试）
+**Description**: Create Firebase test user and get custom token (development testing only)
 
-**查询参数**:
+**Query Parameters**:
 
-- `email` (String) - 用户邮箱
-- `name` (String) - 用户名称
-- `photoUrl` (String, 可选) - 头像 URL
+- `email` (String) - User email
+- `name` (String) - Username
+- `photoUrl` (String, optional) - Avatar URL
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -1141,7 +1141,7 @@
     "email": "test@example.com",
     "name": "Test User",
     "customToken": "firebase-custom-token",
-    "instructions": "使用 customToken 在前端调用 signInWithCustomToken() 获取 ID Token"
+    "instructions": "Use customToken to call signInWithCustomToken() in frontend to get ID Token"
   },
   "success": true
 }
@@ -1149,13 +1149,13 @@
 
 ---
 
-### 6.2 验证 Firebase Token
+### 6.2 Verify Firebase Token
 
-**接口**: `POST /api/test/verify-token`
+**Endpoint**: `POST /api/test/verify-token`
 
-**描述**: 验证 Firebase ID Token（仅用于开发测试）
+**Description**: Verify Firebase ID Token (development testing only)
 
-**请求体**:
+**Request Body**:
 
 ```json
 {
@@ -1163,7 +1163,7 @@
 }
 ```
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -1182,15 +1182,15 @@
 
 ---
 
-### 6.3 获取用户信息
+### 6.3 Get User Information
 
-**接口**: `GET /api/test/user/{uid}`
+**Endpoint**: `GET /api/test/user/{uid}`
 
-**描述**: 根据 Firebase UID 获取用户信息（仅用于开发测试）
+**Description**: Get user information by Firebase UID (development testing only)
 
-**路径参数**: `uid` (String) - Firebase 用户 UID
+**Path Parameter**: `uid` (String) - Firebase user UID
 
-**响应示例**:
+**Response Example**:
 
 ```json
 {
@@ -1209,58 +1209,58 @@
 
 ---
 
-## 七、积分系统说明
+## VII. Points System Description
 
-### 7.1 积分规则
+### 7.1 Points Rules
 
-- **积分获取**: 用户首次完成问卷时，如果问卷设置了积分（`points` 字段），系统会自动给用户增加相应积分
-- **积分计算**: 每次增加积分后，系统会自动计算用户的段位和升段所需积分
+- **Points Earning**: When users complete a survey for the first time, if the survey has points set (in the `points` field), the system will automatically add the corresponding points to the user's account
+- **Points Calculation**: After each points addition, the system automatically calculates the user's rank and points needed for the next rank
 
-### 7.2 段位规则
+### 7.2 Ranking Rules
 
-| 段位 | 积分范围  | 升段所需积分  |
-| ---- | --------- | ------------- |
-| 青铜 | 0-99      | 100           |
-| 白银 | 100-299   | 300           |
-| 黄金 | 300-599   | 600           |
-| 白金 | 600-999   | 1000          |
-| 钻石 | 1000-1999 | 2000          |
-| 大师 | 2000-4999 | 5000          |
-| 宗师 | 5000+     | 0（最高段位） |
+| Rank | Points Range | Points for Next Rank |
+| ---- | ----------- | ------------------- |
+| Bronze | 0-99 | 100 |
+| Silver | 100-299 | 300 |
+| Gold | 300-599 | 600 |
+| Platinum | 600-999 | 1000 |
+| Diamond | 1000-1999 | 2000 |
+| Master | 2000-4999 | 5000 |
+| Grandmaster | 5000+ | 0 (Highest Rank) |
 
-### 7.3 积分相关字段
+### 7.3 Points-Related Fields
 
-用户实体中包含以下积分相关字段：
+User entity includes the following points-related fields:
 
-- `currentPoints` (Integer) - 当前积分
-- `rank` (String) - 段位
-- `pointsToNextRank` (Integer) - 升段所需积分
-
----
-
-## 八、错误码说明
-
-- `code: 1` - 请求成功
-- `code: 0` - 请求失败（具体错误信息见 `msg` 字段）
-
-### 常见错误
-
-1. **401 Unauthorized**: Token 过期或无效，需要重新登录
-2. **404 Not Found**: 资源不存在
-3. **400 Bad Request**: 请求参数错误
-4. **500 Internal Server Error**: 服务器内部错误
+- `currentPoints` (Integer) - Current points
+- `rank` (String) - Current rank
+- `pointsToNextRank` (Integer) - Points needed for next rank
 
 ---
 
-## 九、使用示例
+## VIII. Error Code Description
 
-### 9.1 用户登录流程
+- `code: 1` - Request successful
+- `code: 0` - Request failed (see `msg` field for specific error message)
+
+### Common Errors
+
+1. **401 Unauthorized**: Token expired or invalid, need to login again
+2. **404 Not Found**: Resource does not exist
+3. **400 Bad Request**: Invalid request parameters
+4. **500 Internal Server Error**: Server internal error
+
+---
+
+## IX. Usage Examples
+
+### 9.1 User Login Process
 
 ```javascript
-// 1. 前端获取 Firebase ID Token
+// 1. Get Firebase ID Token from frontend
 const idToken = await firebase.auth().currentUser.getIdToken();
 
-// 2. 调用登录接口
+// 2. Call login API
 const response = await fetch("http://localhost:8082/api/user/login", {
   method: "POST",
   headers: {
@@ -1274,28 +1274,28 @@ const response = await fetch("http://localhost:8082/api/user/login", {
 const data = await response.json();
 const { accessToken, refreshToken } = data.data;
 
-// 3. 保存 Token
+// 3. Save tokens
 localStorage.setItem("accessToken", accessToken);
 localStorage.setItem("refreshToken", refreshToken);
 ```
 
-### 9.2 第三方登录流程（Google/Facebook/Twitter）
+### 9.2 Third-Party Login Process (Google/Facebook/Twitter)
 
 ```javascript
-// 1. 使用 Firebase 进行第三方登录（支持 Google、Facebook、Twitter）
-// Google 登录示例
+// 1. Use Firebase for third-party login (supports Google, Facebook, Twitter)
+// Google login example
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 const googleResult = await firebase.auth().signInWithPopup(googleProvider);
 
-// Facebook 登录示例
+// Facebook login example
 // const facebookProvider = new firebase.auth.FacebookAuthProvider();
 // const facebookResult = await firebase.auth().signInWithPopup(facebookProvider);
 
-// Twitter 登录示例
+// Twitter login example
 // const twitterProvider = new firebase.auth.TwitterAuthProvider();
 // const twitterResult = await firebase.auth().signInWithPopup(twitterProvider);
 
-// 2. 获取 Firebase ID Token
+// 2. Get Firebase ID Token
 const idToken = await googleResult.user.getIdToken();
 
 // 3. 调用第三方登录接口

@@ -41,9 +41,58 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 
 ## Tech Stack
 - **External APIs:** Google Identity Services, Firebase Authentication / Firestore, Google Maps SDK for Android.
-- **Onboard Sensors:** GPS / Network Location, Gyroscope, Camera API, Microphone API
-- **Data Storage:** Proto DataStore(local data caching)
+- **Onboard Sensors:** GPS / Network Location (additional sensors such as camera/microphone planned).
+- **Data Storage:** Proto DataStore, Firebase Firestore, in-memory placeholders for interim demo.
 
+
+---
+
+## Build & Run
+
+1. **Prerequisites**
+   - Android Studio Ladybug or newer (ships with JDK 17).
+   - Android SDK 34 installed (`Tools ▸ SDK Manager`).
+   - Firebase project with Email/Password auth enabled.
+   
+2. **Clone & Configure**
+   ```bash
+   git clone https://github.com/Spectual/QZone.git
+   cd Qzone/Qzone
+   ```
+   - Download Firebase `google-services.json` and place it in `Qzone/app/`.
+   
+3. **Gradle Sync**
+   
+   - Open the `Qzone` module in Android Studio.
+   - Let Gradle sync; if prompted, accept the Android SDK licenses.
+
+4. **Run / Build**
+   - Select the `app` configuration.
+   - Use a device/emulator running Android 8.0 (API 26) or higher.
+   - Press **Run** (or build via `./gradlew assembleDebug`). First launch lands on the sign-in screen—use an existing Firebase user or create one via the register flow.
+
+---
+
+## Current Prototype Features
+
+- **Authentication**
+  - Email/password registration and login via Firebase.
+  - Backend token exchange (access + refresh) logged to Logcat (`QzoneAuth`).
+- **Survey Feed**
+  - Jetpack Navigation drives transitions between sign-in, feed, survey, and profile.
+  - Feed screen displays a mock “Campus Dining Satisfaction” survey; payload logged by `PlaceholderSurveyRepo`.
+- **Survey Flow**
+  - `SurveyViewModel` fetches survey details, tracks answers, and submits responses to the backend (`submitResponses`).
+  - Supports single choice, multiple choice, and text questions; required questions flagged in state.
+- **Profile & History**
+  - `ProfileViewModel` combines `UserRepository.currentUser` with reward inventory to show progress and next reward cost.
+  - History screen filters survey completions by query.
+- **Rewards**
+  - Placeholder reward catalog rendered with Compose cards; reward detail screen displays terms and redeem CTA stub.
+- **Architecture**
+  - MVVM with `StateFlow` in every `ViewModel`, Compose UI collects state.
+  - Repositories decoupled behind domain interfaces; Firebase user repo already integrated, surveys/rewards still mocked.
+  - Retrofit + Moshi client ready for survey/reward APIs when backend endpoints solidify.
 ---
 
 ## UI Overview

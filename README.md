@@ -73,26 +73,37 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 
 ---
 
-## Current Prototype Features
+## Recap of Proposal (What's changed)
 
 - **Authentication**
   - Email/password registration and login via Firebase.
   - Backend token exchange (access + refresh) logged to Logcat (`QzoneAuth`).
+  
 - **Survey Feed**
   - Jetpack Navigation drives transitions between sign-in, feed, survey, and profile.
   - Feed screen displays a mock “Campus Dining Satisfaction” survey; payload logged by `PlaceholderSurveyRepo`.
+  
 - **Survey Flow**
   - `SurveyViewModel` fetches survey details, tracks answers, and submits responses to the backend (`submitResponses`).
   - Supports single choice, multiple choice, and text questions; required questions flagged in state.
+  
 - **Profile & History**
   - `ProfileViewModel` combines `UserRepository.currentUser` with reward inventory to show progress and next reward cost.
   - History screen filters survey completions by query.
+  
 - **Rewards**
   - Placeholder reward catalog rendered with Compose cards; reward detail screen displays terms and redeem CTA stub.
+  - Full redemption workflow deferred to next milestone; exploring partnership model as part of the business iteration.
+  
 - **Architecture**
   - MVVM with `StateFlow` in every `ViewModel`, Compose UI collects state.
   - Repositories decoupled behind domain interfaces; Firebase user repo already integrated, surveys/rewards still mocked.
   - Retrofit + Moshi client ready for survey/reward APIs when backend endpoints solidify.
+  
+- **Backend**
+  - Since the proposal the Java backend now exposes login, register, survey CRUD, and “get nearby surveys” endpoints.
+  - Mobile app already consumes `/api/user/login`, `/api/user/register`, and `/api/survey/submit`; feed currently uses mock data but the Retrofit client is ready to swap in the live `nearby` endpoint.
+  
 ---
 
 ## UI Overview

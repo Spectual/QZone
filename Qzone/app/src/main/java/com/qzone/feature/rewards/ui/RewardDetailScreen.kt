@@ -1,19 +1,21 @@
 package com.qzone.feature.rewards.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +30,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.qzone.feature.rewards.RewardDetailUiState
+import com.qzone.ui.components.QzoneElevatedSurface
+import com.qzone.ui.components.QzoneTag
+import com.qzone.ui.components.qzoneScreenBackground
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -38,59 +43,115 @@ fun RewardDetailScreen(
 ) {
     val uiState by state.collectAsState()
     val reward = uiState.reward
+    val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 32.dp)
+            .qzoneScreenBackground()
+            .padding(horizontal = 24.dp)
+            .padding(top = topPadding + 24.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         IconButton(onClick = onBack) {
             Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
         }
-        Spacer(modifier = Modifier.height(16.dp))
+
         reward?.let {
-            Text(text = it.brandName, style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(12.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(24.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Text(
+                    text = it.brandName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                QzoneElevatedSurface {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 28.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        QzoneTag(
+                            text = "${it.pointsCost} pts required",
+                            emphasize = true
+                        )
+                        Text(
+                            text = it.description,
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = it.terms,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        CouponCode(placeholder = it.qrCodePlaceholder)
+                        Text(
+                            text = "Valid until ${it.expiryDate}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+                Button(
+                    onClick = onRedeem,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text("Redeem reward")
+                }
+            }
+        } ?: run {
+            QzoneElevatedSurface {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = it.description, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = it.terms, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    CouponCode(placeholder = it.qrCodePlaceholder)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = it.expiryDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                    Text(
+                        text = "Reward unavailable",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "This reward could not be loaded. Try refreshing from the rewards list.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(32.dp))
-            Button(onClick = onRedeem, modifier = Modifier.fillMaxWidth()) {
-                Text("Redeem")
-            }
-        } ?: run {
-            Text(text = "Reward unavailable", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
 @Composable
 private fun CouponCode(placeholder: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .height(160.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .background(MaterialTheme.colorScheme.surface)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = placeholder.ifBlank { "QR CODE" }, style = MaterialTheme.typography.bodySmall)
+        Text(
+            text = placeholder.ifBlank { "Present this QR code in-store" },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+            textAlign = TextAlign.Center
+        )
     }
 }

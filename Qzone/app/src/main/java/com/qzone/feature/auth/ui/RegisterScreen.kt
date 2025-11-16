@@ -1,13 +1,16 @@
 package com.qzone.feature.auth.ui
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -29,8 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import com.qzone.feature.auth.RegisterUiState
+import com.qzone.ui.components.QzoneElevatedSurface
+import com.qzone.ui.components.QzoneTag
+import com.qzone.ui.components.qzoneScreenBackground
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -43,101 +48,111 @@ fun RegisterScreen(
     onBack: () -> Unit
 ) {
     val uiState by state.collectAsState()
-    Box(
+    val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+    )
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 28.dp, vertical = 36.dp)
+            .qzoneScreenBackground()
+            .padding(horizontal = 24.dp)
+            .padding(top = topPadding + 32.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(text = "Create account", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(24.dp))
-            OutlinedTextField(
-                value = uiState.username,
-                onValueChange = onUsernameChanged,
-                leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null) },
-                placeholder = { Text("Username") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
+            Text(
+                text = "QZone",
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = uiState.email,
-                onValueChange = onEmailChanged,
-                leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
-                placeholder = { Text("E-mail") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = uiState.password,
-                onValueChange = onPasswordChanged,
-                leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
-                placeholder = { Text("Password") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = onRegister,
-                enabled = !uiState.isLoading,
+        }
+
+        QzoneElevatedSurface {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onSurface,
-                    contentColor = MaterialTheme.colorScheme.surface
-                )
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Sign up")
-                }
-            }
-            uiState.errorMessage?.let {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = it, color = MaterialTheme.colorScheme.error)
+                OutlinedTextField(
+                    value = uiState.username,
+                    onValueChange = onUsernameChanged,
+                    leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null) },
+                    label = { Text("Display name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    shape = MaterialTheme.shapes.large
+                )
+                OutlinedTextField(
+                    value = uiState.email,
+                    onValueChange = onEmailChanged,
+                    leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
+                    label = { Text("Email") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    shape = MaterialTheme.shapes.large
+                )
+                OutlinedTextField(
+                    value = uiState.password,
+                    onValueChange = onPasswordChanged,
+                    leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
+                    label = { Text("Password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    shape = MaterialTheme.shapes.large
+                )
+                Text(
+                    text = "Your password should include at least 8 characters with a mix of letters and numbers.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+        Button(
+            onClick = onRegister,
+            enabled = !uiState.isLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = MaterialTheme.shapes.large,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        ) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Create account")
             }
         }
-        TextButton(
-            onClick = onBack,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
-        ) {
+                uiState.errorMessage?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+
+        TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text(text = "Back to sign in", textAlign = TextAlign.Center)
         }
     }

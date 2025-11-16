@@ -19,15 +19,26 @@ fun rememberQzoneAppState(
     rewardRepository: RewardRepository,
     userRepository: UserRepository,
     locationRepository: LocationRepository,
+    useDarkTheme: Boolean,
+    onToggleDarkTheme: (Boolean) -> Unit,
     navController: NavHostController = rememberNavController()
 ): QzoneAppState {
-    return remember(navController, surveyRepository, rewardRepository, userRepository, locationRepository) {
+    return remember(
+        navController,
+        surveyRepository,
+        rewardRepository,
+        userRepository,
+        locationRepository,
+        useDarkTheme
+    ) {
         QzoneAppState(
             navController = navController,
             surveyRepository = surveyRepository,
             rewardRepository = rewardRepository,
             userRepository = userRepository,
-            locationRepository = locationRepository
+            locationRepository = locationRepository,
+            useDarkTheme = useDarkTheme,
+            onToggleDarkTheme = onToggleDarkTheme
         )
     }
 }
@@ -38,7 +49,9 @@ class QzoneAppState(
     val surveyRepository: SurveyRepository,
     val rewardRepository: RewardRepository,
     val userRepository: UserRepository,
-    val locationRepository: LocationRepository
+    val locationRepository: LocationRepository,
+    val useDarkTheme: Boolean,
+    val onToggleDarkTheme: (Boolean) -> Unit
 ) {
 
     fun isTopLevelDestination(destination: NavDestination?): Boolean {

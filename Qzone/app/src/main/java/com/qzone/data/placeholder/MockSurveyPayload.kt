@@ -28,7 +28,7 @@ object MockSurveyPayloadFactory {
         return MockSurveyPayload(
             id = "gshRSaqwS3EHOjvqZmKs",
             title = "Campus Dining Satisfaction Survey",
-            description = "Help us improve the campus dining experience by sharing your honest feedback.",
+            description = "Share your thoughts on the campus dining experience.",
             latitude = 42.3505,
             longitude = -71.1054,
             points = 10,

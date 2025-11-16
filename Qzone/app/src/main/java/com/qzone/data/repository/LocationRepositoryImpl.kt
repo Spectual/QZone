@@ -13,6 +13,8 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import android.util.Log
+import android.widget.Toast
 import com.qzone.data.model.UserLocation
 import com.qzone.domain.repository.LocationRepository
 import kotlinx.coroutines.channels.awaitClose
@@ -64,15 +66,31 @@ class LocationRepositoryImpl(
         return try {
             val location = fusedLocationClient.lastLocation.await()
             if (location != null) {
-                val address = getAddressFromLocation(location.latitude, location.longitude)
-                com.qzone.data.model.LocationResult.Success(
-                    UserLocation(
-                        latitude = location.latitude,
-                        longitude = location.longitude,
-                        address = address,
-                        timestamp = location.time
+                // Debug: log raw location values returned by FusedLocationProvider
+                Log.d(TAG, "getLastLocation: latitude=${location.latitude}, longitude=${location.longitude}, time=${location.time}, accuracy=${location.accuracy}")
+
+                // Validate cached lastLocation: prefer current high-accuracy reading if lastLocation is old or coarse
+                val ageMs = System.currentTimeMillis() - location.time
+                val accuracyMeters = if (location.hasAccuracy()) location.accuracy else Float.MAX_VALUE
+
+                val maxAgeMs = 60_000L // 1 minute
+                val maxAcceptableAccuracy = 50f // meters
+
+                if (ageMs <= maxAgeMs && accuracyMeters <= maxAcceptableAccuracy) {
+                    val address = getAddressFromLocation(location.latitude, location.longitude)
+                    com.qzone.data.model.LocationResult.Success(
+                        UserLocation(
+                            latitude = location.latitude,
+                            longitude = location.longitude,
+                            address = address,
+                            timestamp = location.time
+                        )
                     )
-                )
+                } else {
+                    // Cached value is too old or inaccurate; request an up-to-date high-accuracy location
+                    Log.d(TAG, "getLastLocation: cached location stale or coarse (age=${ageMs}ms, acc=${accuracyMeters}m) -> requesting fresh location")
+                    getCurrentLocation()
+                }
             } else {
                 // If last location is null, try to get current location
                 getCurrentLocation()
@@ -87,19 +105,46 @@ class LocationRepositoryImpl(
     }
 
     override suspend fun getCurrentLocation(): com.qzone.data.model.LocationResult {
+        // 立即显示 Toast，验证此方法被调用
+        Toast.makeText(context, "🔍 getCurrentLocation() called", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "=== getCurrentLocation() START ===")
+        
         if (!hasLocationPermission()) {
+            Log.d(TAG, "getCurrentLocation: No location permission")
             return com.qzone.data.model.LocationResult.PermissionDenied
         }
 
         if (!isLocationEnabled()) {
+            Log.d(TAG, "getCurrentLocation: Location is disabled")
             return com.qzone.data.model.LocationResult.LocationDisabled
         }
 
         return try {
+            // Prefer the Task-based getCurrentLocation which usually returns a high-accuracy instant location
+            try {
+                val location = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
+                if (location != null) {
+                    Log.d(TAG, "getCurrentLocation:getCurrentLocation -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
+                    val address = getAddressFromLocationSync(location.latitude, location.longitude)
+                    return com.qzone.data.model.LocationResult.Success(
+                        UserLocation(
+                            latitude = location.latitude,
+                            longitude = location.longitude,
+                            address = address,
+                            timestamp = location.time
+                        )
+                    )
+                }
+            } catch (ignored: Exception) {
+                // Fall through to requestLocationUpdates approach if getCurrentLocation fails for any reason
+                Log.d(TAG, "getCurrentLocation: getCurrentLocation() failed, falling back to requestLocationUpdates: ${ignored.message}")
+            }
+
+            // Fallback: request location updates and wait for the next available result
             suspendCancellableCoroutine { continuation ->
                 val locationRequest = LocationRequest.Builder(
                     Priority.PRIORITY_HIGH_ACCURACY,
-                    10000L // 10 seconds
+                    10_000L // 10 seconds
                 ).build()
 
                 val locationCallback = object : LocationCallback() {
@@ -110,6 +155,7 @@ class LocationRepositoryImpl(
                                 location.latitude,
                                 location.longitude
                             )
+                            Log.d(TAG, "getCurrentLocation:onLocationResult -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
                             continuation.resume(
                                 com.qzone.data.model.LocationResult.Success(
                                     UserLocation(
@@ -240,5 +286,9 @@ class LocationRepositoryImpl(
         } catch (e: Exception) {
             null
         }
+    }
+
+    companion object {
+        private const val TAG = "LocationRepositoryImpl"
     }
 }

@@ -1,5 +1,6 @@
 package com.qzone.data.network
 
+import com.qzone.data.model.NearbyLocation
 import com.qzone.data.network.model.ApiResult
 import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
@@ -7,6 +8,7 @@ import com.qzone.data.network.model.RegisterRequest
 import com.qzone.data.network.model.SubmitAnswerItem
 import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface QzoneApiService {
 
@@ -18,5 +20,16 @@ interface QzoneApiService {
 
     @POST("/api/response/")
     suspend fun submitResponses(@Body body: List<SubmitAnswerItem>): ApiResult<String>
+
+    @POST("/api/location/nearby")
+    suspend fun getNearbyLocations(
+        @Query("userLat") userLat: Double,
+        @Query("userLng") userLng: Double,
+        @Query("radiusKm") radiusKm: Double,
+        @Query("precision") precision: Int,
+        @Query("maxResults") maxResults: Int,
+        @Query("includeDistance") includeDistance: Boolean,
+        @Query("sortByDistance") sortByDistance: Boolean
+    ): ApiResult<List<NearbyLocation>>
 }
 

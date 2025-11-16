@@ -23,7 +23,8 @@ class MainActivity : ComponentActivity() {
                         surveyRepository = container.surveyRepository,
                         rewardRepository = container.rewardRepository,
                         userRepository = container.userRepository,
-                        locationRepository = container.locationRepository
+                        locationRepository = container.locationRepository,
+                        localSurveyRepository = container.localSurveyRepository
                     )
                     QzoneApp(appState)
                 }

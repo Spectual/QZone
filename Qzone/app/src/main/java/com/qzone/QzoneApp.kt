@@ -7,6 +7,7 @@ import com.qzone.data.repository.FirebaseUserRepository
 import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.data.repository.PlaceholderRewardRepository
 import com.qzone.data.repository.PlaceholderSurveyRepository
+import com.qzone.data.repository.ApiSurveyRepository
 import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.SurveyRepository
@@ -26,7 +27,7 @@ class QzoneApp : Application() {
         val localSurveyRepository = LocalSurveyRepository(database)
         
         container = AppContainer(
-            surveyRepository = PlaceholderSurveyRepository(),
+            surveyRepository = ApiSurveyRepository(),
             rewardRepository = PlaceholderRewardRepository(),
             userRepository = FirebaseUserRepository(),
             locationRepository = LocationRepositoryImpl(this),

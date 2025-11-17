@@ -17,6 +17,7 @@ import android.util.Log
 import android.widget.Toast
 import com.qzone.data.model.UserLocation
 import com.qzone.domain.repository.LocationRepository
+import com.qzone.util.CoordinateConverter
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -67,7 +68,7 @@ class LocationRepositoryImpl(
             val location = fusedLocationClient.lastLocation.await()
             if (location != null) {
                 // Debug: log raw location values returned by FusedLocationProvider
-                Log.d(TAG, "getLastLocation: latitude=${location.latitude}, longitude=${location.longitude}, time=${location.time}, accuracy=${location.accuracy}")
+                Log.d(TAG, "getLastLocation: RAW GPS (WGS-84) -> latitude=${location.latitude}, longitude=${location.longitude}, time=${location.time}, accuracy=${location.accuracy}")
 
                 // Validate cached lastLocation: prefer current high-accuracy reading if lastLocation is old or coarse
                 val ageMs = System.currentTimeMillis() - location.time
@@ -77,11 +78,20 @@ class LocationRepositoryImpl(
                 val maxAcceptableAccuracy = 50f // meters
 
                 if (ageMs <= maxAgeMs && accuracyMeters <= maxAcceptableAccuracy) {
-                    val address = getAddressFromLocation(location.latitude, location.longitude)
+                    // Convert coordinates if in China (WGS-84 -> GCJ-02)
+                    val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
+                        val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
+                        Log.d(TAG, "getLastLocation: CONVERTED to GCJ-02 -> latitude=${converted.first}, longitude=${converted.second}")
+                        converted
+                    } else {
+                        Pair(location.latitude, location.longitude)
+                    }
+                    
+                    val address = getAddressFromLocation(convertedLat, convertedLng)
                     com.qzone.data.model.LocationResult.Success(
                         UserLocation(
-                            latitude = location.latitude,
-                            longitude = location.longitude,
+                            latitude = convertedLat,
+                            longitude = convertedLng,
                             address = address,
                             timestamp = location.time
                         )
@@ -105,12 +115,7 @@ class LocationRepositoryImpl(
     }
 
     override suspend fun getCurrentLocation(): com.qzone.data.model.LocationResult {
-        // 立即显示 Toast，验证此方法被调用
-        Toast.makeText(context, "🔍 getCurrentLocation() called", Toast.LENGTH_SHORT).show()
-        Log.d(TAG, "=== getCurrentLocation() START ===")
-        
         if (!hasLocationPermission()) {
-            Log.d(TAG, "getCurrentLocation: No location permission")
             return com.qzone.data.model.LocationResult.PermissionDenied
         }
 
@@ -124,12 +129,24 @@ class LocationRepositoryImpl(
             try {
                 val location = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
                 if (location != null) {
-                    Log.d(TAG, "getCurrentLocation:getCurrentLocation -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
-                    val address = getAddressFromLocationSync(location.latitude, location.longitude)
+                    // Log raw GPS coordinates (WGS-84)
+                    Log.d(TAG, "getCurrentLocation:RAW GPS (WGS-84) -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
+                    
+                    // Convert coordinates if in China (WGS-84 -> GCJ-02)
+                    val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
+                        val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
+                        Log.d(TAG, "getCurrentLocation:CONVERTED to GCJ-02 -> latitude=${converted.first}, longitude=${converted.second}")
+                        converted
+                    } else {
+                        Log.d(TAG, "getCurrentLocation:Outside China, using WGS-84 as-is")
+                        Pair(location.latitude, location.longitude)
+                    }
+                    
+                    val address = getAddressFromLocationSync(convertedLat, convertedLng)
                     return com.qzone.data.model.LocationResult.Success(
                         UserLocation(
-                            latitude = location.latitude,
-                            longitude = location.longitude,
+                            latitude = convertedLat,
+                            longitude = convertedLng,
                             address = address,
                             timestamp = location.time
                         )
@@ -151,16 +168,24 @@ class LocationRepositoryImpl(
                     override fun onLocationResult(result: LocationResult) {
                         super.onLocationResult(result)
                         result.lastLocation?.let { location ->
-                            val address = getAddressFromLocationSync(
-                                location.latitude,
-                                location.longitude
-                            )
-                            Log.d(TAG, "getCurrentLocation:onLocationResult -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
+                            // Log raw GPS coordinates (WGS-84)
+                            Log.d(TAG, "getCurrentLocation:onLocationResult RAW GPS (WGS-84) -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
+                            
+                            // Convert coordinates if in China (WGS-84 -> GCJ-02)
+                            val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
+                                val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
+                                Log.d(TAG, "getCurrentLocation:onLocationResult CONVERTED to GCJ-02 -> latitude=${converted.first}, longitude=${converted.second}")
+                                converted
+                            } else {
+                                Pair(location.latitude, location.longitude)
+                            }
+                            
+                            val address = getAddressFromLocationSync(convertedLat, convertedLng)
                             continuation.resume(
                                 com.qzone.data.model.LocationResult.Success(
                                     UserLocation(
-                                        latitude = location.latitude,
-                                        longitude = location.longitude,
+                                        latitude = convertedLat,
+                                        longitude = convertedLng,
                                         address = address,
                                         timestamp = location.time
                                     )

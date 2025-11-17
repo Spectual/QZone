@@ -67,17 +67,7 @@ fun FeedScreen(
         }
     }
     
-    // Request location permission if not granted
-    LaunchedEffect(uiState.hasLocationPermission) {
-        if (!uiState.hasLocationPermission) {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
-        }
-    }
+    // Removed auto permission request: user must tap 'Enable Location' to grant.
     
     Column(
         modifier = Modifier
@@ -85,30 +75,52 @@ fun FeedScreen(
             .padding(horizontal = 24.dp, vertical = 32.dp)
     ) {
         Text(text = "Nearby Surveys", style = MaterialTheme.typography.headlineSmall)
-        
-        // Location info
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = if (uiState.currentLocation != null) Icons.Default.GpsFixed else Icons.Default.MyLocation,
-                contentDescription = null,
-                tint = if (uiState.currentLocation != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+        if (!uiState.hasLocationPermission) {
+            Spacer(modifier = Modifier.height(12.dp))
+            AssistChip(
+                onClick = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                },
+                label = { Text("Enable Location") },
+                leadingIcon = { Icon(imageVector = Icons.Default.MyLocation, contentDescription = null) }
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = uiState.currentLocation?.toDisplayString() ?: "Getting location...",
+                text = "Location access is disabled. Tap to enable for nearby surveys.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary
             )
         }
         
-        uiState.completedCount.takeIf { it > 0 }?.let { count ->
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "$count completed nearby",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary
-            )
+        // Show location info only after we actually have a location
+        if (uiState.hasLocationPermission && uiState.currentLocation != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.GpsFixed,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = uiState.currentLocation!!.toDisplayString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            uiState.completedCount.takeIf { it > 0 }?.let { count ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$count completed nearby",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
         Spacer(modifier = Modifier.height(24.dp))
         if (uiState.surveys.isEmpty()) {

@@ -73,22 +73,21 @@ class FeedViewModel(
         _uiState.update { it.copy(hasLocationPermission = hasPermission) }
     }
 
+    
     fun refreshWithLocation() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, locationError = null) }
-            
+
             // Get current location
             when (val result = locationRepository.getCurrentLocation()) {
                 is LocationResult.Success -> {
-                    _uiState.update { it.copy(currentLocation = result.location) }
-                    // Refresh surveys with location filter (5km radius)
-                    surveyRepository.refreshNearby(result.location, radiusMeters = 5000)
-                    // Load nearby locations from API (only if we have authentication)
-                    loadNearbyLocationsWithCoordinates(result.location.latitude, result.location.longitude)
+                    val success = result as LocationResult.Success
+                    _uiState.update { it.copy(currentLocation = success.location) }
+                    surveyRepository.refreshNearby(success.location, radiusMeters = 5000)
+                    loadNearbyLocationsWithCoordinates(success.location.latitude, success.location.longitude)
                 }
                 is LocationResult.PermissionDenied -> {
                     _uiState.update { it.copy(locationError = "Location permission denied") }
-                    // Refresh without location filter
                     surveyRepository.refreshNearby(null)
                 }
                 is LocationResult.LocationDisabled -> {
@@ -96,7 +95,8 @@ class FeedViewModel(
                     surveyRepository.refreshNearby(null)
                 }
                 is LocationResult.Error -> {
-                    _uiState.update { it.copy(locationError = result.message) }
+                    val error = result as LocationResult.Error
+                    _uiState.update { it.copy(locationError = error.message) }
                     surveyRepository.refreshNearby(null)
                 }
             }
@@ -125,14 +125,12 @@ class FeedViewModel(
             _uiState.update { it.copy(isLoadingNearby = true, nearbyError = null) }
             try {
                 val radiusKm = 5.0
-                val precision = 7
+                val precision = 9
                 val maxResults = 200
                 val includeDistance = true
                 val sortByDistance = true
 
-                Log.d(TAG, "Calling getNearbyLocations params: userLat=$latitude, userLng=$longitude, radiusKm=$radiusKm, precision=$precision, maxResults=$maxResults, includeDistance=$includeDistance, sortByDistance=$sortByDistance")
-
-                val result = com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(
+                val body = com.qzone.data.network.model.NearbyLocationRequest(
                     userLat = latitude,
                     userLng = longitude,
                     radiusKm = radiusKm,
@@ -141,6 +139,7 @@ class FeedViewModel(
                     includeDistance = includeDistance,
                     sortByDistance = sortByDistance
                 )
+                val result = com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(body)
                 if (result.success && result.data != null) {
                     _uiState.update { it.copy(nearbyLocations = result.data, isLoadingNearby = false) }
                     // Save nearby locations to local database

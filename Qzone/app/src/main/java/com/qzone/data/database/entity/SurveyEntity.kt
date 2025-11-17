@@ -1,0 +1,175 @@
+package com.qzone.data.database.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.qzone.data.model.Survey
+import com.qzone.data.model.SurveyQuestion
+import com.qzone.data.model.SurveyOption
+
+@Entity(tableName = "surveys")
+data class SurveyEntity(
+    @PrimaryKey
+    val id: String,
+    val title: String,
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val points: Int = 0,
+    val isCompleted: Boolean = false,
+    val questionsJson: String = "", // Store questions as JSON
+    val syncedAt: Long = System.currentTimeMillis()
+) {
+    fun toSurvey(questions: List<SurveyQuestion> = emptyList()): Survey {
+        return Survey(
+            id = id,
+            title = title,
+            description = description,
+            latitude = latitude,
+            longitude = longitude,
+            points = points,
+            questions = questions,
+            isCompleted = isCompleted
+        )
+    }
+
+    companion object {
+        fun fromSurvey(survey: Survey): SurveyEntity {
+            return SurveyEntity(
+                id = survey.id,
+                title = survey.title,
+                description = survey.description,
+                latitude = survey.latitude,
+                longitude = survey.longitude,
+                points = survey.points,
+                isCompleted = survey.isCompleted,
+                questionsJson = "", // Will be handled by QuestionEntity
+                syncedAt = System.currentTimeMillis()
+            )
+        }
+    }
+}
+
+@Entity(
+    tableName = "survey_questions",
+    foreignKeys = [
+        androidx.room.ForeignKey(
+            entity = SurveyEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["surveyId"],
+            onDelete = androidx.room.ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        androidx.room.Index(value = ["surveyId"])
+    ]
+)
+data class SurveyQuestionEntity(
+    @PrimaryKey
+    val id: String,
+    val surveyId: String,
+    val type: String,
+    val content: String,
+    val required: Boolean,
+    val optionsJson: String = "", // Store options as JSON
+    val questionIndex: Int = 0
+) {
+    fun toSurveyQuestion(options: List<SurveyOption> = emptyList()): SurveyQuestion {
+        return SurveyQuestion(
+            id = id,
+            type = type,
+            content = content,
+            required = required,
+            options = options
+        )
+    }
+
+    companion object {
+        fun fromSurveyQuestion(surveyId: String, question: SurveyQuestion, index: Int): SurveyQuestionEntity {
+            return SurveyQuestionEntity(
+                id = question.id,
+                surveyId = surveyId,
+                type = question.type,
+                content = question.content,
+                required = question.required,
+                optionsJson = "", // Will be handled by OptionEntity
+                questionIndex = index
+            )
+        }
+    }
+}
+
+@Entity(
+    tableName = "survey_options",
+    foreignKeys = [
+        androidx.room.ForeignKey(
+            entity = SurveyQuestionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["questionId"],
+            onDelete = androidx.room.ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        androidx.room.Index(value = ["questionId"])
+    ]
+)
+data class SurveyOptionEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val questionId: String,
+    val content: String,
+    val label: String
+) {
+    fun toSurveyOption(): SurveyOption {
+        return SurveyOption(
+            content = content,
+            label = label
+        )
+    }
+
+    companion object {
+        fun fromSurveyOption(questionId: String, option: SurveyOption): SurveyOptionEntity {
+            return SurveyOptionEntity(
+                questionId = questionId,
+                content = option.content,
+                label = option.label
+            )
+        }
+    }
+}
+
+@Entity(tableName = "nearby_locations")
+data class NearbyLocationEntity(
+    @PrimaryKey
+    val documentId: String,
+    val title: String,
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val distance: Double? = null,
+    val syncedAt: Long = System.currentTimeMillis()
+) {
+    fun toNearbyLocation(): com.qzone.data.model.NearbyLocation {
+        return com.qzone.data.model.NearbyLocation(
+            documentId = documentId,
+            title = title,
+            description = description,
+            latitude = latitude,
+            longitude = longitude,
+            distance = distance
+        )
+    }
+
+    companion object {
+        fun fromNearbyLocation(location: com.qzone.data.model.NearbyLocation): NearbyLocationEntity {
+            return NearbyLocationEntity(
+                documentId = location.documentId,
+                title = location.title,
+                description = location.description,
+                latitude = location.latitude,
+                longitude = location.longitude,
+                distance = location.distance,
+                syncedAt = System.currentTimeMillis()
+            )
+        }
+    }
+}

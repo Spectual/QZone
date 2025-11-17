@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
                         rewardRepository = container.rewardRepository,
                         userRepository = container.userRepository,
                         locationRepository = container.locationRepository,
+                        localSurveyRepository = container.localSurveyRepository,
                         useDarkTheme = useDarkTheme,
                         onToggleDarkTheme = { useDarkTheme = it }
                     )

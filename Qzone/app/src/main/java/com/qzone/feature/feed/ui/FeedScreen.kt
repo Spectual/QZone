@@ -77,16 +77,7 @@ fun FeedScreen(
         }
     }
 
-    LaunchedEffect(uiState.hasLocationPermission) {
-        if (!uiState.hasLocationPermission) {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
-        }
-    }
+    // Removed auto permission request: user must tap 'Enable Location' to grant.
 
     Column(
         modifier = Modifier
@@ -96,35 +87,53 @@ fun FeedScreen(
             .padding(top = topPadding + 28.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Text(
-            text = "Discover surveys nearby",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1
-        )
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Icon(
-                imageVector = if (uiState.currentLocation != null) Icons.Default.GpsFixed else Icons.Default.MyLocation,
-                contentDescription = null,
-                tint = if (uiState.currentLocation != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+        Text(text = "Nearby Surveys", style = MaterialTheme.typography.headlineSmall)
+        if (!uiState.hasLocationPermission) {
+            Spacer(modifier = Modifier.height(12.dp))
+            AssistChip(
+                onClick = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                },
+                label = { Text("Enable Location") },
+                leadingIcon = { Icon(imageVector = Icons.Default.MyLocation, contentDescription = null) }
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = uiState.currentLocation?.toDisplayString() ?: "Locating you…",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
-        }
-        uiState.completedCount.takeIf { it > 0 }?.let { count ->
-            Text(
-                text = "$count recently completed nearby",
-                style = MaterialTheme.typography.labelMedium,
+                text = "Location access is disabled. Tap to enable for nearby surveys.",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary
             )
+        }
+        
+        // Show location info only after we actually have a location
+        if (uiState.hasLocationPermission && uiState.currentLocation != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.GpsFixed,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = uiState.currentLocation!!.toDisplayString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            uiState.completedCount.takeIf { it > 0 }?.let { count ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$count completed nearby",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
 
         if (uiState.surveys.isEmpty()) {

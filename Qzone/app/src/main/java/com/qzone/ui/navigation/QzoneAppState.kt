@@ -8,6 +8,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.SurveyRepository
@@ -19,6 +20,7 @@ fun rememberQzoneAppState(
     rewardRepository: RewardRepository,
     userRepository: UserRepository,
     locationRepository: LocationRepository,
+    localSurveyRepository: LocalSurveyRepository,
     useDarkTheme: Boolean,
     onToggleDarkTheme: (Boolean) -> Unit,
     navController: NavHostController = rememberNavController()
@@ -29,7 +31,9 @@ fun rememberQzoneAppState(
         rewardRepository,
         userRepository,
         locationRepository,
-        useDarkTheme
+        localSurveyRepository,
+        useDarkTheme,
+        onToggleDarkTheme
     ) {
         QzoneAppState(
             navController = navController,
@@ -37,6 +41,7 @@ fun rememberQzoneAppState(
             rewardRepository = rewardRepository,
             userRepository = userRepository,
             locationRepository = locationRepository,
+            localSurveyRepository = localSurveyRepository,
             useDarkTheme = useDarkTheme,
             onToggleDarkTheme = onToggleDarkTheme
         )
@@ -50,6 +55,7 @@ class QzoneAppState(
     val rewardRepository: RewardRepository,
     val userRepository: UserRepository,
     val locationRepository: LocationRepository,
+    val localSurveyRepository: LocalSurveyRepository,
     val useDarkTheme: Boolean,
     val onToggleDarkTheme: (Boolean) -> Unit
 ) {

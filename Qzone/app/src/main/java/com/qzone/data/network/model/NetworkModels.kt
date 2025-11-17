@@ -39,3 +39,14 @@ data class SubmitAnswerItem(
     val content: String?
 )
 
+// Nearby location query body
+data class NearbyLocationRequest(
+    @Json(name = "userLat") val userLat: Double,
+    @Json(name = "userLng") val userLng: Double,
+    @Json(name = "radiusKm") val radiusKm: Double,
+    @Json(name = "precision") val precision: Int,
+    @Json(name = "maxResults") val maxResults: Int,
+    @Json(name = "includeDistance") val includeDistance: Boolean,
+    @Json(name = "sortByDistance") val sortByDistance: Boolean
+)
+

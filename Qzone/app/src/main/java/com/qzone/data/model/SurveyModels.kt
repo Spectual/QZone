@@ -39,3 +39,13 @@ data class SurveyHistoryItem(
     val pointsEarned: Int,
     val locationLabel: String
 ) : Parcelable
+
+@Parcelize
+data class NearbyLocation(
+    val documentId: String,
+    val title: String,
+    val description: String,
+    val latitude: Double,
+    val longitude: Double,
+    val distance: Double? = null
+) : Parcelable

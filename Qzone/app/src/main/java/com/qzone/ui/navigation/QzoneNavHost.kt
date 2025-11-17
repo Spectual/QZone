@@ -72,7 +72,11 @@ fun QzoneNavHost(
         }
         composable(QzoneDestination.Feed.route) {
             val feedViewModel: FeedViewModel = viewModel(
-                factory = FeedViewModel.factory(appState.surveyRepository, appState.locationRepository)
+                factory = FeedViewModel.factory(
+                    appState.surveyRepository,
+                    appState.locationRepository,
+                    appState.localSurveyRepository
+                )
             )
             FeedScreen(
                 state = feedViewModel.uiState,

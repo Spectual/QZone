@@ -7,28 +7,61 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+
 
 private val LightColors = lightColorScheme(
     primary = QzonePrimary,
     onPrimary = QzoneOnPrimary,
+    primaryContainer = QzonePrimaryContainer,
+    onPrimaryContainer = QzoneOnPrimaryContainer,
     secondary = QzoneSecondary,
     onSecondary = QzoneOnSecondary,
+    secondaryContainer = QzoneSecondaryContainer,
+    onSecondaryContainer = QzoneOnSecondaryContainer,
+    tertiary = QzoneTertiary,
+    onTertiary = QzoneOnTertiary,
+    tertiaryContainer = QzoneTertiaryContainer,
+    onTertiaryContainer = QzoneOnTertiaryContainer,
     background = QzoneBackground,
     surface = QzoneSurface,
-    surfaceVariant = Color(0xFFF0EFF4),
-    onSurface = Color(0xFF1C1C24),
-    outline = Color(0xFFD4D5DA)
+    surfaceVariant = QzoneSurfaceVariant,
+    onSurface = QzoneOnSurface,
+    onSurfaceVariant = QzoneOnSurfaceVariant,
+    outline = QzoneOutline,
+    outlineVariant = QzoneOutlineVariant,
+    error = Color(0xFFBA1A1A),
+    onError = Color.White,
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002)
 )
 
 private val DarkColors = darkColorScheme(
-    primary = QzonePrimary,
-    onPrimary = QzoneOnPrimary,
-    secondary = QzoneSecondary,
-    background = Color(0xFF101018),
-    surface = Color(0xFF181824)
+    primary = QzoneDarkPrimary,
+    onPrimary = QzoneDarkOnPrimary,
+    primaryContainer = QzoneDarkPrimaryContainer,
+    onPrimaryContainer = QzoneDarkOnPrimaryContainer,
+    secondary = QzoneDarkSecondary,
+    onSecondary = QzoneDarkOnSecondary,
+    secondaryContainer = QzoneDarkSecondaryContainer,
+    onSecondaryContainer = QzoneDarkOnSecondaryContainer,
+    tertiary = QzoneDarkTertiary,
+    onTertiary = QzoneDarkOnTertiary,
+    tertiaryContainer = QzoneDarkTertiaryContainer,
+    onTertiaryContainer = QzoneDarkOnTertiaryContainer,
+    background = QzoneDarkBackground,
+    surface = QzoneDarkSurface,
+    surfaceVariant = QzoneDarkSurfaceVariant,
+    onSurface = QzoneDarkOnSurface,
+    onSurfaceVariant = QzoneDarkOnSurfaceVariant,
+    outline = QzoneDarkOutline,
+    outlineVariant = QzoneDarkOutlineVariant,
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6)
 )
 
 @Composable
@@ -49,6 +82,7 @@ fun QzoneTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = QzoneTypography,
+        shapes = QzoneShapes,
         content = content
     )
 }

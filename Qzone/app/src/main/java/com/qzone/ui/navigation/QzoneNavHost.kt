@@ -104,10 +104,8 @@ fun QzoneNavHost(
                 onPrevious = surveyViewModel::onPrevious,
                 onNext = surveyViewModel::onNext,
                 onClose = { navController.popBackStack() },
-                onSubmit = {
-                    surveyViewModel.submit()
-                    navController.popBackStack()
-                },
+                onSubmit = { surveyViewModel.submit() },
+                onCompletionAcknowledged = { navController.popBackStack() },
                 onAnswerChanged = surveyViewModel::onAnswerChanged
             )
         }
@@ -140,6 +138,8 @@ fun QzoneNavHost(
             ProfileSettingsScreen(
                 onBack = { navController.popBackStack() },
                 onEditProfile = { navController.navigate(QzoneDestination.EditProfile.route) },
+                isDarkTheme = appState.useDarkTheme,
+                onToggleDarkMode = appState.onToggleDarkTheme,
                 onLogout = {
                     profileViewModel.signOut {
                         navController.navigate(QzoneDestination.SignIn.route) {

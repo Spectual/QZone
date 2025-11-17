@@ -14,8 +14,10 @@ import kotlinx.coroutines.launch
 
 data class HistoryUiState(
     val query: String = "",
-    val entries: List<SurveyHistoryItem> = emptyList(),
-    val filteredEntries: List<SurveyHistoryItem> = emptyList()
+    val completedEntries: List<SurveyHistoryItem> = emptyList(),
+    val inProgressEntries: List<SurveyHistoryItem> = emptyList(),
+    val filteredCompleted: List<SurveyHistoryItem> = emptyList(),
+    val filteredInProgress: List<SurveyHistoryItem> = emptyList()
 )
 
 class HistoryViewModel(private val userRepository: UserRepository) : ViewModel() {
@@ -27,8 +29,13 @@ class HistoryViewModel(private val userRepository: UserRepository) : ViewModel()
         viewModelScope.launch {
             userRepository.currentUser.collect { user ->
                 _uiState.update {
-                    val list = user.history
-                    it.copy(entries = list, filteredEntries = filter(list, it.query))
+                    val (completed, inProgress) = user.history.partition { it.completedAt.isNotBlank() }
+                    it.copy(
+                        completedEntries = completed,
+                        inProgressEntries = inProgress,
+                        filteredCompleted = filter(completed, it.query),
+                        filteredInProgress = filter(inProgress, it.query)
+                    )
                 }
             }
         }
@@ -36,8 +43,13 @@ class HistoryViewModel(private val userRepository: UserRepository) : ViewModel()
 
     fun onQueryChange(query: String) {
         _uiState.update { state ->
-            val filtered = filter(state.entries, query)
-            state.copy(query = query, filteredEntries = filtered)
+            val filteredCompleted = filter(state.completedEntries, query)
+            val filteredInProgress = filter(state.inProgressEntries, query)
+            state.copy(
+                query = query,
+                filteredCompleted = filteredCompleted,
+                filteredInProgress = filteredInProgress
+            )
         }
     }
 

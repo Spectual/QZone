@@ -6,6 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.core.view.WindowCompat
 import com.qzone.ui.navigation.QzoneApp
 import com.qzone.ui.navigation.rememberQzoneAppState
@@ -17,14 +21,17 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val container = (application as QzoneApp).container
         setContent {
-            QzoneTheme {
+            var useDarkTheme by rememberSaveable { mutableStateOf(true) }
+            QzoneTheme(useDarkTheme = useDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val appState = rememberQzoneAppState(
                         surveyRepository = container.surveyRepository,
                         rewardRepository = container.rewardRepository,
                         userRepository = container.userRepository,
                         locationRepository = container.locationRepository,
-                        localSurveyRepository = container.localSurveyRepository
+                        localSurveyRepository = container.localSurveyRepository,
+                        useDarkTheme = useDarkTheme,
+                        onToggleDarkTheme = { useDarkTheme = it }
                     )
                     QzoneApp(appState)
                 }

@@ -3,6 +3,7 @@ package com.qzone.feature.survey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
 import com.qzone.domain.repository.SurveyRepository
@@ -51,6 +52,7 @@ class SurveyViewModel(
     }
 
     fun onAnswerChanged(questionId: String, value: String, toggle: Boolean = false) {
+        Log.d(TAG, "onAnswerChanged: questionId=" + questionId + ", value=" + value + ", toggle=" + toggle)
         val survey = _uiState.value.survey ?: return
         val question = survey.questions.firstOrNull { it.id == questionId } ?: return
         _uiState.update { state ->
@@ -122,11 +124,15 @@ class SurveyViewModel(
                     }
                 }
             }
-
-            val response = runCatching { QzoneApiClient.service.submitResponses(items) }.getOrElse { throwable ->
+            Log.d(TAG, "Submitting answers: surveyId=" + surveyId + ", items=" + items.size)
+            val response = try {
+                QzoneApiClient.service.submitResponses(items)
+            } catch (t: Throwable) {
+                Log.e(TAG, "Submit responses failed", t)
                 _uiState.update { it.copy(isSubmitting = false) }
                 return@launch
             }
+            Log.d(TAG, "Submit response -> success=" + response.success + ", code=" + response.code + ", msg=" + (response.msg ?: "") + ", data=" + (response.data ?: ""))
             if (response.success) {
                 repository.markSurveyCompleted(surveyId)
                 userRepository.recordSurveyCompletion(survey)
@@ -138,6 +144,7 @@ class SurveyViewModel(
     }
 
     companion object {
+        private const val TAG = "SurveyViewModel"
         fun factory(
             repository: SurveyRepository,
             userRepository: UserRepository,

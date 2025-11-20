@@ -16,6 +16,8 @@ data class SurveyEntity(
     val longitude: Double,
     val points: Int = 0,
     val isCompleted: Boolean = false,
+    val currentQuestionIndex: Int = 0,
+    val answersJson: String = "", // Store answers as JSON
     val questionsJson: String = "", // Store questions as JSON
     val syncedAt: Long = System.currentTimeMillis()
 ) {
@@ -28,7 +30,30 @@ data class SurveyEntity(
             longitude = longitude,
             points = points,
             questions = questions,
-            isCompleted = isCompleted
+            isCompleted = isCompleted,
+            currentQuestionIndex = currentQuestionIndex,
+            // Simple JSON parsing for answers map - in a real app use Gson/Moshi
+            answers = if (answersJson.isNotEmpty()) {
+                try {
+                    // Very basic parsing for "key:val1,val2|key2:val3" format or similar
+                    // For now, let's assume empty map if we don't have a proper parser here
+                    // Or better, let's just use an empty map for now and rely on the Repository to handle it if needed
+                    // But wait, we need to persist it.
+                    // Let's use a simple convention: key=val1,val2;key2=val3
+                    answersJson.split(";").filter { it.isNotEmpty() }.associate {
+                        val parts = it.split("=")
+                        if (parts.size == 2) {
+                            parts[0] to parts[1].split(",")
+                        } else {
+                            "" to emptyList()
+                        }
+                    }.filterKeys { k -> k.isNotEmpty() }
+                } catch (e: Exception) {
+                    emptyMap()
+                }
+            } else {
+                emptyMap()
+            }
         )
     }
 
@@ -42,6 +67,8 @@ data class SurveyEntity(
                 longitude = survey.longitude,
                 points = survey.points,
                 isCompleted = survey.isCompleted,
+                currentQuestionIndex = survey.currentQuestionIndex,
+                answersJson = survey.answers.entries.joinToString(";") { (k, v) -> "$k=${v.joinToString(",")}" },
                 questionsJson = "", // Will be handled by QuestionEntity
                 syncedAt = System.currentTimeMillis()
             )

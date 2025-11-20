@@ -137,6 +137,27 @@ class FirebaseUserRepository(
         _currentUser.emit(updated)
     }
 
+    override suspend fun deductPoints(amount: Int) {
+        val current = _currentUser.value
+        val updated = current.copy(totalPoints = current.totalPoints - amount)
+        delay(200)
+        _currentUser.emit(updated)
+    }
+
+    override suspend fun recordRedemption(reward: com.qzone.data.model.Reward) {
+        val current = _currentUser.value
+        val redemption = RewardRedemption(
+            rewardId = reward.id,
+            redeemedAt = formatter.format(Date()),
+            status = com.qzone.data.model.RedemptionStatus.REDEEMED
+        )
+        val updated = current.copy(
+            redemptions = listOf(redemption) + current.redemptions
+        )
+        delay(200)
+        _currentUser.emit(updated)
+    }
+
     override suspend fun signOut() {
         auth.signOut()
         tokens.emit(null)

@@ -9,4 +9,8 @@ interface SurveyRepository {
     suspend fun refreshNearby(userLocation: UserLocation? = null, radiusMeters: Int = 5000)
     suspend fun getSurveyById(id: String): Survey?
     suspend fun markSurveyCompleted(id: String)
+    
+    fun getCompletedSurveys(): Flow<List<Survey>>
+    fun getUncompletedSurveys(): Flow<List<Survey>>
+    suspend fun saveSurveyProgress(survey: Survey)
 }

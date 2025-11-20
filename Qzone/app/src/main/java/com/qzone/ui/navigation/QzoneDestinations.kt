@@ -24,6 +24,7 @@ sealed class QzoneDestination(val route: String) {
     data object Profile : QzoneDestination("profile")
     data object EditProfile : QzoneDestination("profile/edit")
     data object ProfileSettings : QzoneDestination("profile/settings")
+    data object Wallet : QzoneDestination("profile/wallet")
 }
 
 data class QzoneTopLevelDestination(

@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import kotlinx.coroutines.flow.map
+
 class ApiSurveyRepository : SurveyRepository {
     private val surveysFlow = MutableStateFlow<List<Survey>>(emptyList())
     override val nearbySurveys: Flow<List<Survey>> = surveysFlow.asStateFlow()
@@ -67,6 +69,20 @@ class ApiSurveyRepository : SurveyRepository {
         // For now, just update local state
         surveysFlow.value = surveysFlow.value.map {
             if (it.id == id) it.copy(isCompleted = true) else it
+        }
+    }
+
+    override fun getCompletedSurveys(): Flow<List<Survey>> {
+        return surveysFlow.map { list -> list.filter { it.isCompleted } }
+    }
+
+    override fun getUncompletedSurveys(): Flow<List<Survey>> {
+        return surveysFlow.map { list -> list.filter { !it.isCompleted } }
+    }
+
+    override suspend fun saveSurveyProgress(survey: Survey) {
+        surveysFlow.value = surveysFlow.value.map {
+            if (it.id == survey.id) survey else it
         }
     }
 }

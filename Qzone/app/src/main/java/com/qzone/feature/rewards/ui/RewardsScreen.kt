@@ -23,6 +23,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -40,10 +47,35 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun RewardsScreen(
     state: StateFlow<RewardsUiState>,
-    onRewardSelected: (String) -> Unit
+    onRewardSelected: (String) -> Unit,
+    onRedeem: (Reward) -> Unit
 ) {
     val uiState by state.collectAsState()
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    var rewardToRedeem by remember { mutableStateOf<Reward?>(null) }
+
+    if (rewardToRedeem != null) {
+        AlertDialog(
+            onDismissRequest = { rewardToRedeem = null },
+            title = { Text("Redeem Reward") },
+            text = { Text("Are you sure you want to redeem ${rewardToRedeem?.brandName} for ${rewardToRedeem?.pointsCost} points?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        rewardToRedeem?.let { onRedeem(it) }
+                        rewardToRedeem = null
+                    }
+                ) {
+                    Text("Redeem")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { rewardToRedeem = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -62,7 +94,8 @@ fun RewardsScreen(
             items(uiState.rewards, key = { it.id }) { reward ->
                 RewardCard(
                     reward = reward,
-                    onClick = { onRewardSelected(reward.id) }
+                    onClick = { onRewardSelected(reward.id) },
+                    onRedeemClick = { rewardToRedeem = reward }
                 )
             }
         }
@@ -72,7 +105,8 @@ fun RewardsScreen(
 @Composable
 private fun RewardCard(
     reward: Reward,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onRedeemClick: () -> Unit
 ) {
     QzoneElevatedSurface(
         modifier = Modifier
@@ -143,11 +177,26 @@ private fun RewardCard(
                 )
             }
 
-            QzoneTag(
-                text = "Tap to view details",
-                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                contentColor = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                QzoneTag(
+                    text = "Tap to view details",
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+                Button(
+                    onClick = onRedeemClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text("Redeem")
+                }
+            }
         }
     }
 }

@@ -17,7 +17,15 @@ import kotlinx.coroutines.launch
 data class ProfileUiState(
     val profile: UserProfile? = null,
     val isLoading: Boolean = true,
-    val nextRewardCost: Int? = null
+    val nextRewardCost: Int? = null,
+    val recentRedemptions: List<RedemptionDisplayItem> = emptyList()
+)
+
+data class RedemptionDisplayItem(
+    val rewardId: String,
+    val rewardName: String,
+    val pointsCost: Int,
+    val redeemedAt: String
 )
 
 data class EditProfileUiState(
@@ -44,9 +52,26 @@ class ProfileViewModel(
         viewModelScope.launch {
             combine(userRepository.currentUser, rewardRepository.availableRewards) { user, rewards ->
                 val nextRewardCost = rewards.minByOrNull { it.pointsCost }?.pointsCost
-                user to nextRewardCost
-            }.collect { (user, nextRewardCost) ->
-                _uiState.update { ProfileUiState(profile = user, isLoading = false, nextRewardCost = nextRewardCost) }
+                val redemptions = user.redemptions.mapNotNull { redemption ->
+                    rewards.find { it.id == redemption.rewardId }?.let { reward ->
+                        RedemptionDisplayItem(
+                            rewardId = reward.id,
+                            rewardName = reward.brandName,
+                            pointsCost = reward.pointsCost,
+                            redeemedAt = redemption.redeemedAt
+                        )
+                    }
+                }
+                Triple(user, nextRewardCost, redemptions)
+            }.collect { (user, nextRewardCost, redemptions) ->
+                _uiState.update { 
+                    ProfileUiState(
+                        profile = user, 
+                        isLoading = false, 
+                        nextRewardCost = nextRewardCost,
+                        recentRedemptions = redemptions.sortedByDescending { it.redeemedAt }
+                    ) 
+                }
                 _editState.update {
                     it.copy(
                         name = user.displayName,

@@ -26,10 +26,12 @@ class QzoneApp : Application() {
         val database = QzoneDatabase.getInstance(this)
         val localSurveyRepository = LocalSurveyRepository(database)
         
+        val userRepository = FirebaseUserRepository()
+        
         container = AppContainer(
             surveyRepository = ApiSurveyRepository(),
-            rewardRepository = PlaceholderRewardRepository(),
-            userRepository = FirebaseUserRepository(),
+            rewardRepository = PlaceholderRewardRepository(userRepository),
+            userRepository = userRepository,
             locationRepository = LocationRepositoryImpl(this),
             database = database,
             localSurveyRepository = localSurveyRepository

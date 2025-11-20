@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 
 class PlaceholderSurveyRepository : SurveyRepository {
 
@@ -39,6 +40,20 @@ class PlaceholderSurveyRepository : SurveyRepository {
         completedIds.add(id)
         surveysFlow.value = surveysFlow.value.map { survey ->
             if (survey.id == id) survey.copy(isCompleted = true) else survey
+        }
+    }
+
+    override fun getCompletedSurveys(): Flow<List<Survey>> {
+        return surveysFlow.map { list -> list.filter { it.isCompleted } }
+    }
+
+    override fun getUncompletedSurveys(): Flow<List<Survey>> {
+        return surveysFlow.map { list -> list.filter { !it.isCompleted } }
+    }
+
+    override suspend fun saveSurveyProgress(survey: Survey) {
+        surveysFlow.value = surveysFlow.value.map {
+            if (it.id == survey.id) survey else it
         }
     }
 

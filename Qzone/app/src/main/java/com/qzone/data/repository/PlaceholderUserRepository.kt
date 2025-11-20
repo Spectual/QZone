@@ -2,6 +2,9 @@ package com.qzone.data.repository
 
 import com.qzone.data.model.AuthResult
 import com.qzone.data.model.EditableProfile
+import com.qzone.data.model.RedemptionStatus
+import com.qzone.data.model.Reward
+import com.qzone.data.model.RewardRedemption
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyHistoryItem
 import com.qzone.data.model.UserProfile
@@ -92,6 +95,28 @@ class PlaceholderUserRepository : UserRepository {
         storedProfile = current.copy(
             totalPoints = current.totalPoints + survey.points,
             history = listOf(newHistory) + current.history
+        )
+        userFlow.value = storedProfile
+    }
+
+    override suspend fun deductPoints(amount: Int) {
+        delay(200)
+        val current = userFlow.value
+        storedProfile = current.copy(totalPoints = current.totalPoints - amount)
+        userFlow.value = storedProfile
+    }
+
+    override suspend fun recordRedemption(reward: Reward) {
+        delay(200)
+        val formatter = SimpleDateFormat("MM/dd/yy", Locale.getDefault())
+        val redemption = RewardRedemption(
+            rewardId = reward.id,
+            redeemedAt = formatter.format(Date()),
+            status = RedemptionStatus.REDEEMED
+        )
+        val current = userFlow.value
+        storedProfile = current.copy(
+            redemptions = listOf(redemption) + current.redemptions
         )
         userFlow.value = storedProfile
     }

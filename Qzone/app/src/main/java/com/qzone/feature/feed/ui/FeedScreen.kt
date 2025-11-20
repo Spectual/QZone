@@ -51,6 +51,7 @@ import com.qzone.data.model.Survey
 import com.qzone.feature.feed.FeedUiState
 import com.qzone.ui.components.QzoneElevatedSurface
 import com.qzone.ui.components.QzoneTag
+import com.qzone.ui.components.SurveyCard
 import com.qzone.ui.components.qzoneScreenBackground
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -198,100 +199,4 @@ fun FeedScreen(
     }
 }
 
-@Composable
-private fun SurveyCard(
-    survey: Survey,
-    onClick: () -> Unit
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    val isDark = colorScheme.background.luminance() < 0.2f
-    val gradientColors = if (isDark) {
-        listOf(Color(0xFF020203), Color(0xFF16171F), Color(0xFF2C2E37))
-    } else {
-        listOf(Color(0xFFFFFFFF), Color(0xFFE9EBF1), Color(0xFFD4D7DF))
-    }
-    val shape = MaterialTheme.shapes.extraLarge
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(Brush.verticalGradient(gradientColors))
-            .border(1.dp, colorScheme.outline.copy(alpha = 0.05f), shape)
-            .clickable { onClick() }
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = survey.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (survey.description.isNotBlank()) {
-                    Text(
-                        text = survey.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            if (survey.points > 0) {
-                QzoneTag(
-                    text = "+${survey.points} pts",
-                    emphasize = true
-                )
-            }
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = survey.description.takeIf { it.isNotBlank() } ?: "Location published on start",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            QzoneTag(
-                text = if (survey.isCompleted) "Completed" else "Available",
-                containerColor = if (survey.isCompleted) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                contentColor = if (survey.isCompleted) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
-                emphasize = survey.isCompleted
-            )
-            QzoneTag(
-                text = "${survey.questions.size} question${if (survey.questions.size == 1) "" else "s"}",
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}

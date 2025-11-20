@@ -38,7 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.qzone.data.model.SurveyHistoryItem
+import com.qzone.feature.profile.RedemptionDisplayItem
 import com.qzone.feature.profile.ProfileUiState
 import com.qzone.ui.components.QzoneElevatedSurface
 import com.qzone.ui.components.QzoneTag
@@ -50,7 +50,8 @@ fun ProfileScreen(
     state: StateFlow<ProfileUiState>,
     onViewRewards: () -> Unit,
     onHistoryClick: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onWalletClick: () -> Unit
 ) {
     val uiState by state.collectAsState()
     val profile = uiState.profile
@@ -104,8 +105,7 @@ fun ProfileScreen(
                     LoyaltyOverview(
                         levelLabel = user.levelLabel,
                         currentPoints = user.totalPoints,
-                        goal = user.tierPointsGoal,
-                        nextRewardCost = uiState.nextRewardCost
+                        onWalletClick = onWalletClick
                     )
                 }
             }
@@ -116,10 +116,10 @@ fun ProfileScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            HistoryPreview(
-                items = user.history.take(3),
-                totalCount = user.history.size,
-                onViewAll = onHistoryClick
+            RedemptionsPreview(
+                items = uiState.recentRedemptions.take(3),
+                totalCount = uiState.recentRedemptions.size,
+                onViewAll = { /* Navigate to full history if needed, or just show toast */ }
             )
         } ?: run {
             QzoneElevatedSurface {
@@ -191,54 +191,47 @@ private fun Avatar(imageUrl: String?) {
 private fun LoyaltyOverview(
     levelLabel: String,
     currentPoints: Int,
-    goal: Int,
-    nextRewardCost: Int?
+    onWalletClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = levelLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                Text(
-                    text = "$currentPoints / $goal pts",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            nextRewardCost?.let {
-                QzoneTag(
-                    text = "Redeem from $it pts",
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-        val progress = if (goal == 0) 0f else (currentPoints.toFloat() / goal).coerceIn(0f, 1f)
-        LinearProgressIndicator(
-            progress = progress,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(10.dp)
-                .clip(MaterialTheme.shapes.large),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        Text(
+            text = levelLabel,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary
         )
+        Text(
+            text = "$currentPoints pts",
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        
+        Button(
+            onClick = onWalletClick,
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.History,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("My Wallet")
+        }
     }
 }
 
 @Composable
-private fun HistoryPreview(
-    items: List<SurveyHistoryItem>,
+private fun RedemptionsPreview(
+    items: List<RedemptionDisplayItem>,
     totalCount: Int,
     onViewAll: () -> Unit
 ) {
@@ -261,12 +254,12 @@ private fun HistoryPreview(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "No surveys yet",
+                        text = "No redemptions yet",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Your recent activity will appear here once you start completing surveys.",
+                        text = "Redeem your points for rewards to see them here.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         textAlign = TextAlign.Center
@@ -286,32 +279,22 @@ private fun HistoryPreview(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = entry.title,
+                                text = entry.rewardName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = entry.locationLabel,
+                                text = entry.redeemedAt,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Text(
-                            text = "+${entry.pointsEarned}",
+                            text = "-${entry.pointsCost}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onViewAll) {
-                    val hasMore = totalCount > items.size
-                    Text(text = if (hasMore) "See full history" else "View history")
                 }
             }
         }

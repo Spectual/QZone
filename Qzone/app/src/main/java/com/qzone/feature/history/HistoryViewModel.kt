@@ -3,36 +3,42 @@ package com.qzone.feature.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.qzone.data.model.SurveyHistoryItem
-import com.qzone.domain.repository.UserRepository
+import com.qzone.data.model.Survey
+import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class HistoryUiState(
     val query: String = "",
-    val completedEntries: List<SurveyHistoryItem> = emptyList(),
-    val inProgressEntries: List<SurveyHistoryItem> = emptyList(),
-    val filteredCompleted: List<SurveyHistoryItem> = emptyList(),
-    val filteredInProgress: List<SurveyHistoryItem> = emptyList()
+    val completedSurveys: List<Survey> = emptyList(),
+    val inProgressSurveys: List<Survey> = emptyList(),
+    val filteredCompleted: List<Survey> = emptyList(),
+    val filteredInProgress: List<Survey> = emptyList()
 )
 
-class HistoryViewModel(private val userRepository: UserRepository) : ViewModel() {
+class HistoryViewModel(
+    private val surveyRepository: SurveyRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            userRepository.currentUser.collect { user ->
+            combine(
+                surveyRepository.getCompletedSurveys(),
+                surveyRepository.getUncompletedSurveys()
+            ) { completed, inProgress ->
+                completed to inProgress
+            }.collect { (completed, inProgress) ->
                 _uiState.update {
-                    val (completed, inProgress) = user.history.partition { it.completedAt.isNotBlank() }
                     it.copy(
-                        completedEntries = completed,
-                        inProgressEntries = inProgress,
+                        completedSurveys = completed,
+                        inProgressSurveys = inProgress,
                         filteredCompleted = filter(completed, it.query),
                         filteredInProgress = filter(inProgress, it.query)
                     )
@@ -43,8 +49,8 @@ class HistoryViewModel(private val userRepository: UserRepository) : ViewModel()
 
     fun onQueryChange(query: String) {
         _uiState.update { state ->
-            val filteredCompleted = filter(state.completedEntries, query)
-            val filteredInProgress = filter(state.inProgressEntries, query)
+            val filteredCompleted = filter(state.completedSurveys, query)
+            val filteredInProgress = filter(state.inProgressSurveys, query)
             state.copy(
                 query = query,
                 filteredCompleted = filteredCompleted,
@@ -53,19 +59,19 @@ class HistoryViewModel(private val userRepository: UserRepository) : ViewModel()
         }
     }
 
-    private fun filter(list: List<SurveyHistoryItem>, query: String): List<SurveyHistoryItem> {
+    private fun filter(list: List<Survey>, query: String): List<Survey> {
         if (query.isBlank()) return list
         val lower = query.lowercase()
         return list.filter { item ->
-            item.title.lowercase().contains(lower) || item.locationLabel.lowercase().contains(lower)
+            item.title.lowercase().contains(lower) || item.description.lowercase().contains(lower)
         }
     }
 
     companion object {
-        fun factory(userRepository: UserRepository): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        fun factory(surveyRepository: SurveyRepository): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HistoryViewModel(userRepository) as T
+                return HistoryViewModel(surveyRepository) as T
             }
         }
     }

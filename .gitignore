@@ -135,4 +135,4 @@ hs_err_pid*
 # Cache of project
 .gradletasknamecache
 
-**/local.properties
+Qzone/local.properties

@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
@@ -56,11 +58,13 @@ fun ProfileScreen(
     val uiState by state.collectAsState()
     val profile = uiState.profile
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .qzoneScreenBackground()
+            .verticalScroll(scrollState)
             .padding(horizontal = 24.dp)
             .padding(top = topPadding + 28.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(28.dp)
@@ -145,7 +149,7 @@ fun ProfileScreen(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(28.dp))
 
         Button(
             onClick = onViewRewards,

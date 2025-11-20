@@ -1,6 +1,7 @@
 package com.qzone.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -121,7 +122,13 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.Wallet.route) {
-            val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.factory(appState.userRepository, appState.rewardRepository))
+            val parentEntry = remember(it) {
+                navController.getBackStackEntry(QzoneDestination.Profile.route)
+            }
+            val profileViewModel: ProfileViewModel = viewModel(
+                viewModelStoreOwner = parentEntry,
+                factory = ProfileViewModel.factory(appState.userRepository, appState.rewardRepository)
+            )
             WalletScreen(
                 state = profileViewModel.uiState,
                 onBack = { navController.popBackStack() }

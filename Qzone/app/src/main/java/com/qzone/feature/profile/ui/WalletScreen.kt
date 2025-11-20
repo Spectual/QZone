@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
@@ -42,66 +42,76 @@ fun WalletScreen(
     val uiState by state.collectAsState()
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .qzoneScreenBackground()
-            .padding(horizontal = 24.dp)
-            .padding(top = topPadding + 20.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .qzoneScreenBackground(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 24.dp,
+            end = 24.dp,
+            top = topPadding + 20.dp,
+            bottom = 24.dp
+        )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+                Text(
+                    text = "My Wallet",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
-            Text(
-                text = "My Wallet",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(start = 8.dp)
-            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         if (uiState.recentRedemptions.isEmpty()) {
-            QzoneElevatedSurface(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            item {
+                QzoneElevatedSurface(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "No rewards yet",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "Redeemed rewards will appear here.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "No rewards yet",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Redeemed rewards will appear here.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(uiState.recentRedemptions, key = { it.rewardId + it.redeemedAt }) { item ->
-                    RedemptionItemCard(item)
-                }
+            itemsIndexed(
+                items = uiState.recentRedemptions,
+                key = { index, item -> "${item.rewardId}_${item.redeemedAt}_$index" }
+            ) { index, item ->
+                RedemptionItemCard(item)
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

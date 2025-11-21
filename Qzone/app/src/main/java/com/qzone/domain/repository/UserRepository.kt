@@ -12,5 +12,7 @@ interface UserRepository {
     suspend fun register(username: String, email: String, password: String): AuthResult
     suspend fun updateProfile(edit: EditableProfile)
     suspend fun recordSurveyCompletion(survey: Survey)
+    suspend fun deductPoints(amount: Int)
+    suspend fun recordRedemption(reward: com.qzone.data.model.Reward)
     suspend fun signOut()
 }

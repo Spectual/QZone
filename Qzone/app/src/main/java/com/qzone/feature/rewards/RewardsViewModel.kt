@@ -29,6 +29,13 @@ class RewardsViewModel(private val rewardRepository: RewardRepository) : ViewMod
         }
     }
 
+    fun redeemReward(reward: Reward, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = rewardRepository.redeemReward(reward)
+            onResult(success)
+        }
+    }
+
     companion object {
         fun factory(repository: RewardRepository): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")

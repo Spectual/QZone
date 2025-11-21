@@ -42,16 +42,26 @@ import com.qzone.data.model.SurveyHistoryItem
 import com.qzone.feature.history.HistoryUiState
 import com.qzone.ui.components.QzoneElevatedSurface
 import com.qzone.ui.components.QzoneTag
+import com.qzone.ui.components.SurveyCard
 import com.qzone.ui.components.qzoneScreenBackground
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Tab
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun HistoryScreen(
     state: StateFlow<HistoryUiState>,
-    onQueryChanged: (String) -> Unit
+    onQueryChanged: (String) -> Unit,
+    onSurveyClick: (String) -> Unit
 ) {
     val uiState by state.collectAsState()
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    var selectedTab by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val tabs = listOf("In Progress", "Completed")
 
     Column(
         modifier = Modifier
@@ -82,7 +92,19 @@ fun HistoryScreen(
             )
         }
 
-        if (uiState.filteredCompleted.isEmpty() && uiState.filteredInProgress.isEmpty()) {
+        TabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        val items = if (selectedTab == 0) uiState.filteredInProgress else uiState.filteredCompleted
+
+        if (items.isEmpty()) {
             QzoneElevatedSurface(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -99,12 +121,12 @@ fun HistoryScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "No history yet",
+                        text = if (selectedTab == 0) "No surveys in progress" else "No completed surveys",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Surveys you complete will appear here with points and timestamps.",
+                        text = "Surveys will appear here.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -116,35 +138,11 @@ fun HistoryScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                if (uiState.filteredInProgress.isNotEmpty()) {
-                    item(key = "in_progress_header") {
-                        Text(
-                            text = "In Progress",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    items(uiState.filteredInProgress, key = { it.id }) { item ->
-                        HistoryTimelineRow(
-                            item = item,
-                            isLast = false
-                        )
-                    }
-                }
-                if (uiState.filteredCompleted.isNotEmpty()) {
-                    item(key = "complete_header") {
-                        Text(
-                            text = "Completed",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    items(uiState.filteredCompleted, key = { it.id }) { item ->
-                        HistoryTimelineRow(
-                            item = item,
-                            isLast = item == uiState.filteredCompleted.last()
-                        )
-                    }
+                items(items, key = { it.id }) { survey ->
+                    SurveyCard(
+                        survey = survey,
+                        onClick = { onSurveyClick(survey.id) }
+                    )
                 }
             }
         }

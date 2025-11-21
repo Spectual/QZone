@@ -1,6 +1,7 @@
 package com.qzone.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -19,6 +20,7 @@ import com.qzone.feature.profile.ProfileViewModel
 import com.qzone.feature.profile.ui.EditProfileScreen
 import com.qzone.feature.profile.ui.ProfileScreen
 import com.qzone.feature.profile.ui.ProfileSettingsScreen
+import com.qzone.feature.profile.ui.WalletScreen
 import com.qzone.feature.rewards.RewardDetailViewModel
 import com.qzone.feature.rewards.RewardsViewModel
 import com.qzone.feature.rewards.ui.RewardDetailScreen
@@ -115,7 +117,21 @@ fun QzoneNavHost(
                 state = profileViewModel.uiState,
                 onViewRewards = { navController.navigate(QzoneDestination.Rewards.route) },
                 onHistoryClick = { navController.navigate(QzoneDestination.History.route) },
-                onOpenSettings = { navController.navigate(QzoneDestination.ProfileSettings.route) }
+                onOpenSettings = { navController.navigate(QzoneDestination.ProfileSettings.route) },
+                onWalletClick = { navController.navigate(QzoneDestination.Wallet.route) }
+            )
+        }
+        composable(QzoneDestination.Wallet.route) {
+            val parentEntry = remember(it) {
+                navController.getBackStackEntry(QzoneDestination.Profile.route)
+            }
+            val profileViewModel: ProfileViewModel = viewModel(
+                viewModelStoreOwner = parentEntry,
+                factory = ProfileViewModel.factory(appState.userRepository, appState.rewardRepository)
+            )
+            WalletScreen(
+                state = profileViewModel.uiState,
+                onBack = { navController.popBackStack() }
             )
         }
         composable(QzoneDestination.EditProfile.route) {
@@ -153,17 +169,25 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.History.route) {
-            val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(appState.userRepository))
+            val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(appState.surveyRepository))
             HistoryScreen(
                 state = historyViewModel.uiState,
-                onQueryChanged = historyViewModel::onQueryChange
+                onQueryChanged = historyViewModel::onQueryChange,
+                onSurveyClick = { surveyId ->
+                    navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
+                }
             )
         }
         composable(QzoneDestination.Rewards.route) {
             val rewardsViewModel: RewardsViewModel = viewModel(factory = RewardsViewModel.factory(appState.rewardRepository))
             RewardsScreen(
                 state = rewardsViewModel.uiState,
-                onRewardSelected = { id -> navController.navigate(QzoneDestination.RewardDetail.createRoute(id)) }
+                onRewardSelected = { id -> navController.navigate(QzoneDestination.RewardDetail.createRoute(id)) },
+                onRedeem = { reward ->
+                    rewardsViewModel.redeemReward(reward) { success ->
+                        // Handle success/failure (e.g., show toast)
+                    }
+                }
             )
         }
         composable(

@@ -27,6 +27,7 @@ data class Survey(
     val longitude: Double,
     val points: Int = 0,
     val questions: List<SurveyQuestion> = emptyList(),
+    val questionCount: Int = 0,
     val isCompleted: Boolean = false,
     val currentQuestionIndex: Int = 0,
     val answers: Map<String, List<String>> = emptyMap()

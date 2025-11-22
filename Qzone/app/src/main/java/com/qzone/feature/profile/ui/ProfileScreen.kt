@@ -1,6 +1,7 @@
 package com.qzone.feature.profile.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,7 +54,8 @@ fun ProfileScreen(
     onViewRewards: () -> Unit,
     onHistoryClick: () -> Unit,
     onOpenSettings: () -> Unit,
-    onWalletClick: () -> Unit
+    onWalletClick: () -> Unit,
+    onAvatarClick: () -> Unit
 ) {
     val uiState by state.collectAsState()
     val profile = uiState.profile
@@ -87,7 +89,7 @@ fun ProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(22.dp)
                 ) {
-                    Avatar(imageUrl = user.avatarUrl)
+                    Avatar(imageUrl = user.avatarUrl, onClick = onAvatarClick)
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             text = user.displayName,
@@ -166,12 +168,13 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun Avatar(imageUrl: String?) {
+private fun Avatar(imageUrl: String?, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(120.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         if (imageUrl.isNullOrEmpty()) {
@@ -186,6 +189,20 @@ private fun Avatar(imageUrl: String?) {
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f))
+                .padding(vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Change",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
     }

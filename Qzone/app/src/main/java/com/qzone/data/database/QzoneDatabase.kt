@@ -20,7 +20,7 @@ import com.qzone.data.database.entity.SurveyQuestionEntity
         SurveyOptionEntity::class,
         NearbyLocationEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class QzoneDatabase : RoomDatabase() {

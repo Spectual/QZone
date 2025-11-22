@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.qzone.data.local.UserLocalStorage
 import com.qzone.data.model.AuthResult
 import com.qzone.data.model.EditableProfile
 import com.qzone.data.model.RewardRedemption
@@ -14,14 +15,24 @@ import com.qzone.data.network.QzoneApiClient
 import com.qzone.data.network.AuthTokenProvider
 import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
+import com.qzone.data.network.model.NetworkUserProfile
 import com.qzone.data.network.model.RegisterRequest
+import com.qzone.data.network.model.UpdateAvatarRequest
+import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.domain.repository.UserRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -32,11 +43,27 @@ class FirebaseUserRepository(
 ) : UserRepository {
 
     private val tokens = MutableStateFlow<AuthTokens?>(null)
+    private val uploadClient = OkHttpClient()
 
     private val formatter = SimpleDateFormat("MM/dd/yy", Locale.getDefault())
 
     private val _currentUser = MutableStateFlow(DEFAULT_PROFILE)
     override val currentUser: Flow<UserProfile> = _currentUser.asStateFlow()
+
+    init {
+        UserLocalStorage.load()?.let { cached ->
+            val localPath = UserLocalStorage.getAvatarLocalPath()
+            _currentUser.value = cached.toUserProfile(_currentUser.value, localPath)
+        }
+        UserLocalStorage.loadTokens()?.let { stored ->
+            val cachedTokens = AuthTokens(
+                accessToken = stored.accessToken,
+                refreshToken = stored.refreshToken
+            )
+            tokens.value = cachedTokens
+            AuthTokenProvider.accessToken = stored.accessToken
+        }
+    }
 
     override suspend fun signIn(email: String, password: String): AuthResult {
         return runCatching {
@@ -79,15 +106,10 @@ class FirebaseUserRepository(
                 return@runCatching AuthResult(success = false, errorMessage = response.msg ?: "注册失败")
             }
             val data = response.data
-            tokens.emit(
-                AuthTokens(
-                    accessToken = data.accessToken,
-                    refreshToken = data.refreshToken
-                )
-            )
-            AuthTokenProvider.accessToken = data.accessToken
-            Log.d(TAG, "Access token (register): ${data.accessToken}")
-            updateUserFromFirebase(firebaseUser)
+            persistTokens(data.accessToken, data.refreshToken)
+            if (!fetchAndCacheUserProfile()) {
+                updateUserFromFirebase(firebaseUser)
+            }
             AuthResult(success = true)
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
@@ -144,6 +166,88 @@ class FirebaseUserRepository(
         _currentUser.emit(updated)
     }
 
+    override suspend fun updatePoints(totalPoints: Int) {
+        val current = _currentUser.value
+        val updated = current.copy(totalPoints = totalPoints)
+        UserLocalStorage.load()?.let { cached ->
+            UserLocalStorage.save(
+                cached.copy(currentPoints = totalPoints)
+            )
+        }
+        _currentUser.emit(updated)
+    }
+
+    override suspend fun uploadAvatar(imageBytes: ByteArray, contentType: String, filename: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            val uploadResponse = runCatching {
+                apiService.getUploadUrl(UploadUrlRequest(filename = filename, contentType = contentType))
+            }.getOrElse { throwable ->
+                if (throwable is CancellationException) throw throwable
+                Log.e(TAG, "Failed to get upload url", throwable)
+                return@withContext false
+            }
+            if (!uploadResponse.success || uploadResponse.data == null) {
+                Log.w(TAG, "Upload url request failed: ${uploadResponse.msg}")
+                return@withContext false
+            }
+            val uploadInfo = uploadResponse.data
+            val resolvedContentType = uploadInfo.contentType ?: contentType
+            val mediaType = resolvedContentType.toMediaType()
+            Log.d(TAG, "Uploading avatar to ${uploadInfo.uploadUrl} size=${imageBytes.size} type=$resolvedContentType")
+            val requestBody = imageBytes.toRequestBody(mediaType)
+            val putRequest = Request.Builder()
+                .url(uploadInfo.uploadUrl)
+                .put(requestBody)
+                .addHeader("Content-Type", resolvedContentType)
+                .addHeader("x-amz-acl", "public-read")
+                .build()
+            val uploadSucceeded = runCatching {
+                uploadClient.newCall(putRequest).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        val errorBody = response.body?.string()
+                        throw IllegalStateException("S3 upload failed code=${response.code} body=$errorBody")
+                    }
+                }
+            }.onFailure { throwable ->
+                val maskedUrl = uploadInfo.uploadUrl.substringBefore("?")
+                Log.e(TAG, "S3 upload failed for $maskedUrl", throwable)
+            }.isSuccess
+            if (!uploadSucceeded) {
+                return@withContext false
+            }
+            val avatarResponse = runCatching {
+                apiService.updateAvatar(UpdateAvatarRequest(avatarUrl = uploadInfo.publicUrl))
+            }.getOrElse { throwable ->
+                if (throwable is CancellationException) throw throwable
+                Log.e(TAG, "Failed to update avatar url", throwable)
+                return@withContext false
+        }
+        if (!avatarResponse.success) {
+            Log.w(TAG, "Avatar update API failed: ${avatarResponse.msg}")
+            return@withContext false
+        }
+        val current = _currentUser.value
+        val localPath = UserLocalStorage.saveAvatarLocal(imageBytes, filename)
+        val avatarUri = localPath?.let { File(it).toURI().toString() } ?: uploadInfo.publicUrl
+        val updated = current.copy(avatarUrl = avatarUri)
+        _currentUser.emit(updated)
+        val storedNetwork = UserLocalStorage.load()
+        val profileForStorage = (storedNetwork ?: NetworkUserProfile(
+            documentId = updated.id,
+            userName = updated.displayName,
+            email = updated.email,
+            avatarUrl = uploadInfo.publicUrl,
+            currentPoints = updated.totalPoints,
+            rank = updated.levelLabel,
+            pointsToNextRank = (updated.tierPointsGoal - updated.totalPoints).coerceAtLeast(0),
+            createTime = null,
+            updateTime = null
+        )).copy(avatarUrl = uploadInfo.publicUrl)
+        UserLocalStorage.save(profileForStorage)
+        true
+    }
+}
+
     override suspend fun recordRedemption(reward: com.qzone.data.model.Reward) {
         val current = _currentUser.value
         val redemption = RewardRedemption(
@@ -162,7 +266,12 @@ class FirebaseUserRepository(
         auth.signOut()
         tokens.emit(null)
         AuthTokenProvider.accessToken = null
+        UserLocalStorage.clear()
         _currentUser.emit(DEFAULT_PROFILE)
+    }
+
+    override fun hasCachedSession(): Boolean {
+        return tokens.value?.accessToken?.isNotBlank() == true
     }
 
     private suspend fun refreshSession(firebaseUser: FirebaseUser): AuthResult {
@@ -177,15 +286,10 @@ class FirebaseUserRepository(
             return AuthResult(success = false, errorMessage = response.msg ?: "登录失败")
         }
         val data = response.data
-        tokens.emit(
-            AuthTokens(
-                accessToken = data.accessToken,
-                refreshToken = data.refreshToken
-            )
-        )
-        AuthTokenProvider.accessToken = data.accessToken
-        Log.d(TAG, "Access token: ${data.accessToken}")
-        updateUserFromFirebase(firebaseUser)
+        persistTokens(data.accessToken, data.refreshToken)
+        if (!fetchAndCacheUserProfile()) {
+            updateUserFromFirebase(firebaseUser)
+        }
         return AuthResult(success = true)
     }
 
@@ -203,6 +307,68 @@ class FirebaseUserRepository(
             avatarUrl = firebaseUser.photoUrl?.toString()
         )
         _currentUser.emit(updatedProfile)
+        val pointsToNext = (updatedProfile.tierPointsGoal - updatedProfile.totalPoints).coerceAtLeast(0)
+        UserLocalStorage.save(
+            NetworkUserProfile(
+                documentId = firebaseUser.uid,
+                userName = updatedProfile.displayName,
+                email = updatedProfile.email,
+                avatarUrl = updatedProfile.avatarUrl,
+                currentPoints = updatedProfile.totalPoints,
+                rank = updatedProfile.levelLabel,
+                pointsToNextRank = pointsToNext,
+                createTime = null,
+                updateTime = null
+            )
+        )
+    }
+
+    private suspend fun persistTokens(accessToken: String, refreshToken: String) {
+        val newTokens = AuthTokens(
+            accessToken = accessToken,
+            refreshToken = refreshToken
+        )
+        tokens.emit(newTokens)
+        AuthTokenProvider.accessToken = accessToken
+        UserLocalStorage.saveTokens(accessToken, refreshToken)
+        Log.d(TAG, "Access token stored: $accessToken")
+    }
+
+    private suspend fun fetchAndCacheUserProfile(): Boolean {
+        val response = runCatching { apiService.getCurrentUserProfile() }.getOrElse { throwable ->
+            if (throwable is CancellationException) throw throwable
+            Log.e(TAG, "Failed to fetch user profile", throwable)
+            return false
+        }
+        if (!response.success || response.data == null) {
+            Log.w(TAG, "User profile API failed: ${response.msg}")
+            return false
+        }
+        val profile = response.data
+        UserLocalStorage.save(profile)
+        val localPath = UserLocalStorage.getAvatarLocalPath()
+        _currentUser.emit(profile.toUserProfile(_currentUser.value, localPath))
+        return true
+    }
+
+    private fun NetworkUserProfile.toUserProfile(existing: UserProfile?, localAvatarPath: String? = null): UserProfile {
+        val fallback = existing ?: DEFAULT_PROFILE
+        val targetGoal = (currentPoints + pointsToNextRank).coerceAtLeast(0)
+        val avatarFromLocal = localAvatarPath?.let { path ->
+            val file = File(path)
+            if (file.exists()) file.toURI().toString() else null
+        }
+        return fallback.copy(
+            id = documentId,
+            displayName = userName ?: fallback.displayName,
+            email = email ?: fallback.email,
+            avatarUrl = avatarFromLocal ?: avatarUrl ?: fallback.avatarUrl,
+            levelLabel = rank ?: fallback.levelLabel,
+            totalPoints = currentPoints,
+            tierPointsGoal = if (targetGoal > 0) targetGoal else fallback.tierPointsGoal,
+            history = fallback.history,
+            redemptions = fallback.redemptions
+        )
     }
 
     private data class AuthTokens(

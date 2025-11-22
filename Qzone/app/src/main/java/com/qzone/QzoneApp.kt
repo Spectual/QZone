@@ -8,6 +8,7 @@ import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.data.repository.PlaceholderRewardRepository
 import com.qzone.data.repository.PlaceholderSurveyRepository
 import com.qzone.data.repository.ApiSurveyRepository
+import com.qzone.data.local.UserLocalStorage
 import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.SurveyRepository
@@ -21,6 +22,7 @@ class QzoneApp : Application() {
     override fun onCreate() {
         super.onCreate()
         FirebaseUserRepository.ensureFirebaseInitialized(this)
+        UserLocalStorage.initialize(this)
         
         // Initialize Room database
         val database = QzoneDatabase.getInstance(this)

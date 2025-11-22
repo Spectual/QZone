@@ -40,13 +40,32 @@ class FeedViewModel(
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
     
     private var hasLoadedInitially = false
+    private var hasLoadedFromNetwork = false
+    private val prefetchingDetails = mutableSetOf<String>()
 
     init {
         checkLocationPermission()
+        // Observe local cache first to render offline data
+        viewModelScope.launch {
+            localSurveyRepository.getAllSurveys().collect { localSurveys ->
+                val active = localSurveys.filterNot { it.isCompleted }
+                val completed = localSurveys.count { it.isCompleted }
+                _uiState.update { state ->
+                    if (!hasLoadedFromNetwork || state.surveys.isEmpty()) {
+                        state.copy(surveys = active, completedCount = completed)
+                    } else {
+                        state
+                    }
+                }
+            }
+        }
         viewModelScope.launch {
             surveyRepository.nearbySurveys.collect { surveys ->
                 val active = surveys.filterNot { it.isCompleted }
                 val completed = surveys.count { it.isCompleted }
+                if (surveys.isNotEmpty()) {
+                    hasLoadedFromNetwork = true
+                }
                 _uiState.update { it.copy(surveys = active, completedCount = completed) }
                 
                 // Save surveys to local database
@@ -57,6 +76,19 @@ class FeedViewModel(
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                }
+
+                // Prefetch question counts for surveys missing details
+                surveys.filter { it.questionCount == 0 }.forEach { survey ->
+                    if (prefetchingDetails.add(survey.id)) {
+                        viewModelScope.launch {
+                            try {
+                                surveyRepository.getSurveyById(survey.id)
+                            } finally {
+                                prefetchingDetails.remove(survey.id)
+                            }
+                        }
+                    }
                 }
             }
         }

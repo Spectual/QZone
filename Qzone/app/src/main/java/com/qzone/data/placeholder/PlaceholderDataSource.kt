@@ -109,6 +109,7 @@ private fun MockSurveyPayload.toSurvey(id: String): Survey {
                     )
                 }
             )
-        }
+        },
+        questionCount = questions.size
     )
 }

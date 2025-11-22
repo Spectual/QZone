@@ -71,7 +71,7 @@ class FirebaseUserRepository(
         return runCatching {
             auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = auth.currentUser
-                ?: return@runCatching AuthResult(success = false, errorMessage = "未找到 Firebase 用户")
+                ?: return@runCatching AuthResult(success = false, errorMessage = "Firebase user not found")
             refreshSession(firebaseUser, isThirdParty = false)
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
@@ -88,9 +88,9 @@ class FirebaseUserRepository(
                     .build()
             )?.await()
             val firebaseUser = auth.currentUser
-                ?: return@runCatching AuthResult(success = false, errorMessage = "注册成功但未找到用户会话")
+                ?: return@runCatching AuthResult(success = false, errorMessage = "Registration successful but user session not found")
             val tokenResult = firebaseUser.getIdToken(true).await()
-            val idToken = tokenResult.token ?: return@runCatching AuthResult(success = false, errorMessage = "未能获取 Firebase Token")
+            val idToken = tokenResult.token ?: return@runCatching AuthResult(success = false, errorMessage = "Failed to get Firebase Token")
             Log.d(TAG, "Firebase token (register): $idToken")
             val response = runCatching {
                 apiService.register(
@@ -105,7 +105,7 @@ class FirebaseUserRepository(
                 return@runCatching AuthResult(success = false, errorMessage = throwable.toReadableMessage())
             }
             if (!response.success || response.data == null) {
-                return@runCatching AuthResult(success = false, errorMessage = response.msg ?: "注册失败")
+                return@runCatching AuthResult(success = false, errorMessage = response.msg ?: "Registration failed")
             }
             val data = response.data
             persistTokens(data.accessToken, data.refreshToken)
@@ -128,7 +128,7 @@ class FirebaseUserRepository(
             val firebaseUser = auth.currentUser
             if (firebaseUser == null) {
                 Log.e(TAG, "signInWithGoogle: auth.currentUser is null after success")
-                return@runCatching AuthResult(success = false, errorMessage = "未找到 Firebase 用户")
+                return@runCatching AuthResult(success = false, errorMessage = "Firebase user not found")
             }
             Log.d(TAG, "signInWithGoogle: Firebase sign-in success, user=${firebaseUser.uid}, email=${firebaseUser.email}")
             refreshSession(firebaseUser, isThirdParty = true)
@@ -300,7 +300,7 @@ class FirebaseUserRepository(
         val tokenResult = firebaseUser.getIdToken(true).await()
         val idToken = tokenResult.token
         if (idToken.isNullOrBlank()) {
-            return AuthResult(success = false, errorMessage = "未能获取有效的 Firebase Token")
+            return AuthResult(success = false, errorMessage = "Failed to get valid Firebase Token")
         }
         Log.d(TAG, "Firebase token: $idToken")
         val response = runCatching {
@@ -314,7 +314,7 @@ class FirebaseUserRepository(
             return AuthResult(success = false, errorMessage = throwable.toReadableMessage())
         }
         if (!response.success || response.data == null) {
-            return AuthResult(success = false, errorMessage = response.msg ?: "登录失败")
+            return AuthResult(success = false, errorMessage = response.msg ?: "Login failed")
         }
         val data = response.data
         persistTokens(data.accessToken, data.refreshToken)
@@ -325,7 +325,7 @@ class FirebaseUserRepository(
     }
 
     private fun Throwable.toReadableMessage(): String {
-        return message ?: "请求失败，请稍后再试"
+        return message ?: "Request failed, please try again later"
     }
 
     private suspend fun updateUserFromFirebase(firebaseUser: FirebaseUser) {

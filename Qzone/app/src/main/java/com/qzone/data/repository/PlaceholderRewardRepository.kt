@@ -34,7 +34,7 @@ class PlaceholderRewardRepository(
             }
             if (!response.success || response.data == null) {
                 Log.w(TAG, "Redeem API returned failure: ${response.msg}")
-                throw InsufficientPointsException(response.msg ?: "兑换失败")
+                throw InsufficientPointsException(response.msg ?: "Redemption failed")
             }
             userRepository.updatePoints(response.data)
             userRepository.recordRedemption(reward)

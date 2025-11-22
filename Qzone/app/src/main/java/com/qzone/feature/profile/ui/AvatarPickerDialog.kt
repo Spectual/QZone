@@ -19,7 +19,7 @@ fun AvatarPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("更换头像") },
+        title = { Text("Change Avatar") },
         text = {
             Column(
                 modifier = Modifier
@@ -30,7 +30,7 @@ fun AvatarPickerDialog(
                     onClick = onTakePhoto,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("拍照")
+                    Text("Take Photo")
                 }
                 Button(
                     onClick = onPickImage,
@@ -38,14 +38,14 @@ fun AvatarPickerDialog(
                         .fillMaxWidth()
                         .padding(top = 8.dp)
                 ) {
-                    Text("从相册选择")
+                    Text("Choose from Gallery")
                 }
             }
         },
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text("Cancel")
             }
         }
     )

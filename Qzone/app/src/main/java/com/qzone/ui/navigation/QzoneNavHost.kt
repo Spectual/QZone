@@ -280,7 +280,7 @@ fun QzoneNavHost(
                     rewardsViewModel.redeemReward(reward) { success, message ->
                         Toast.makeText(
                             context,
-                            message ?: if (success) "兑换成功" else "兑换失败，请稍后再试",
+                            message ?: if (success) "Redemption successful" else "Redemption failed, please try again later",
                             Toast.LENGTH_SHORT
                         ).show()
                     }

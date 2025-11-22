@@ -34,14 +34,14 @@ class RewardsViewModel(private val rewardRepository: RewardRepository) : ViewMod
             try {
                 val success = rewardRepository.redeemReward(reward)
                 if (success) {
-                    onResult(true, "兑换成功")
+                    onResult(true, "Redemption successful")
                 } else {
-                    onResult(false, "兑换失败，请稍后再试")
+                    onResult(false, "Redemption failed, please try again later")
                 }
             } catch (e: com.qzone.domain.repository.RewardRepository.InsufficientPointsException) {
                 onResult(false, e.message ?: "Insufficient points to redeem")
             } catch (t: Throwable) {
-                onResult(false, t.message ?: "兑换失败，请稍后再试")
+                onResult(false, t.message ?: "Redemption failed, please try again later")
             }
         }
     }

@@ -61,7 +61,7 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val state = uiState.value
             if (state.email.isBlank() || state.password.isBlank()) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "请输入邮箱和密码") }
+                _uiState.update { it.copy(isLoading = false, errorMessage = "Please enter email and password") }
                 return@launch
             }
             val result: AuthResult = repository.signIn(state.email, state.password)
@@ -98,7 +98,7 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
                 _registerState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "请填写用户名、邮箱，并保证密码至少 6 位"
+                        errorMessage = "Please fill in username, email, and ensure password is at least 6 characters"
                     )
                 }
                 return@launch

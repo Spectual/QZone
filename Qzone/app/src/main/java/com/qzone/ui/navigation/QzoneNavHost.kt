@@ -146,8 +146,8 @@ fun QzoneNavHost(
             }
             ProfileScreen(
                 state = profileViewModel.uiState,
-                onViewRewards = { navController.navigate(QzoneDestination.Rewards.route) },
-                onHistoryClick = { navController.navigate(QzoneDestination.History.route) },
+                onViewRewards = { appState.navigateTopLevel(QzoneDestination.Rewards) },
+                onHistoryClick = { appState.navigateTopLevel(QzoneDestination.History) },
                 onOpenSettings = { navController.navigate(QzoneDestination.ProfileSettings.route) },
                 onWalletClick = { navController.navigate(QzoneDestination.Wallet.route) },
                 onAvatarClick = { avatarPicker.launch("image/*") }

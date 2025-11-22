@@ -10,6 +10,7 @@ interface UserRepository {
     val currentUser: Flow<UserProfile>
     suspend fun signIn(username: String, password: String): AuthResult
     suspend fun register(username: String, email: String, password: String): AuthResult
+    suspend fun signInWithGoogle(idToken: String): AuthResult
     suspend fun updateProfile(edit: EditableProfile)
     suspend fun recordSurveyCompletion(survey: Survey)
     suspend fun deductPoints(amount: Int)

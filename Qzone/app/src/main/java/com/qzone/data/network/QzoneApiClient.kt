@@ -27,7 +27,9 @@ object QzoneApiClient {
             .addInterceptor { chain ->
                 val original = chain.request()
                 val path = original.url.encodedPath
-                val isAuthEndpoint = path == "/api/user/login" || path == "/api/user/register"
+                val isAuthEndpoint = path == "/api/user/login" || 
+                                   path == "/api/user/register" || 
+                                   path == "/api/user/third-party"
                 val token = AuthTokenProvider.accessToken
                 val request = if (!isAuthEndpoint && !token.isNullOrBlank()) {
                     original.newBuilder()

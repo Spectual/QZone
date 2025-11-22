@@ -15,6 +15,7 @@ import com.qzone.data.network.model.PointsDeductRequest
 import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.data.network.model.UploadUrlResponse
 import com.qzone.data.network.model.UpdateAvatarRequest
+import com.qzone.data.network.model.ThirdPartyLoginRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -25,6 +26,9 @@ interface QzoneApiService {
 
     @POST("/api/user/login")
     suspend fun login(@Body request: LoginRequest): ApiResult<LoginResponse>
+
+    @POST("/api/user/third-party")
+    suspend fun loginThirdParty(@Body request: ThirdPartyLoginRequest): ApiResult<LoginResponse>
 
     @POST("/api/user/register")
     suspend fun register(@Body request: RegisterRequest): ApiResult<LoginResponse>

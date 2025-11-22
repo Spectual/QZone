@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -19,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -31,9 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.qzone.feature.auth.AuthUiState
+import com.qzone.R
 import com.qzone.ui.components.QzoneElevatedSurface
-import com.qzone.ui.components.QzoneTag
 import com.qzone.ui.components.qzoneScreenBackground
 import kotlinx.coroutines.flow.StateFlow
 
@@ -43,6 +48,7 @@ fun SignInScreen(
     onEmailChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onSignIn: () -> Unit,
+    onGoogleSignIn: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
     val uiState by state.collectAsState()
@@ -136,6 +142,22 @@ fun SignInScreen(
                     } else {
                         Text("Sign in")
                     }
+                }
+                OutlinedButton(
+                    onClick = onGoogleSignIn,
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google_logo),
+                        contentDescription = null,
+                        tint = Color.Unspecified
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = stringResource(id = R.string.sign_in_google))
                 }
                 uiState.errorMessage?.let {
                     Text(

@@ -1,5 +1,6 @@
 package com.qzone.ui.navigation
 
+import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -14,6 +15,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.qzone.R
 import com.qzone.feature.auth.AuthViewModel
 import com.qzone.feature.auth.ui.RegisterScreen
 import com.qzone.feature.auth.ui.SignInScreen
@@ -50,7 +52,59 @@ fun QzoneNavHost(
         modifier = modifier
     ) {
         composable(QzoneDestination.SignIn.route) {
+            val context = LocalContext.current
             val authViewModel: AuthViewModel = viewModel(factory = AuthViewModel.factory(appState.userRepository))
+            val googleSignInClient = remember(context) {
+                val options = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                    com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
+                )
+                    .requestIdToken(context.getString(R.string.default_web_client_id))
+                    .requestEmail()
+                    .build()
+                com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, options)
+            }
+            val googleSignInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                Log.d("GoogleSignIn", "ActivityResult received: resultCode=${result.resultCode}")
+                val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                try {
+                    val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+                    val idToken = account?.idToken
+                    Log.d("GoogleSignIn", "Google account retrieved. ID Token present: ${idToken != null}")
+                    if (idToken != null) {
+                        authViewModel.signInWithGoogle(
+                            idToken,
+                            onSuccess = {
+                                Log.d("GoogleSignIn", "Navigating to Feed after success")
+                                navController.navigate(QzoneDestination.Feed.route) {
+                                    popUpTo(QzoneDestination.SignIn.route) { inclusive = true }
+                                }
+                            },
+                            onFailure = { message ->
+                                Log.e("GoogleSignIn", "Sign in failed: $message")
+                                Toast.makeText(
+                                    context,
+                                    message ?: context.getString(R.string.google_sign_in_failed),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                    } else {
+                        Log.e("GoogleSignIn", "ID Token is null")
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.google_sign_in_failed),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } catch (e: com.google.android.gms.common.api.ApiException) {
+                    Log.e("GoogleSignIn", "ApiException: code=${e.statusCode}, message=${e.message}", e)
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.google_sign_in_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
             SignInScreen(
                 state = authViewModel.uiState,
                 onEmailChanged = authViewModel::onEmailChanged,
@@ -61,6 +115,10 @@ fun QzoneNavHost(
                             popUpTo(QzoneDestination.SignIn.route) { inclusive = true }
                         }
                     }
+                },
+                onGoogleSignIn = {
+                    Log.d("GoogleSignIn", "Launching Google Sign-In intent")
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
                 },
                 onNavigateToRegister = { navController.navigate(QzoneDestination.Register.route) }
             )

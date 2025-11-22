@@ -396,7 +396,7 @@ All APIs return a unified `Result<T>` format:
 
 ### 2.4 Send Forgot Password Email
 
-**接口**: `POST /api/admin/forgetSend`
+**Endpoint**: `POST /api/admin/forgetSend`
 
 **Description**: Send forgot password email
 
@@ -1298,7 +1298,7 @@ const googleResult = await firebase.auth().signInWithPopup(googleProvider);
 // 2. Get Firebase ID Token
 const idToken = await googleResult.user.getIdToken();
 
-// 3. 调用第三方登录接口
+// 3. Call third-party login API
 const response = await fetch("http://localhost:8082/api/user/third-party", {
   method: "POST",
   headers: {
@@ -1312,24 +1312,24 @@ const response = await fetch("http://localhost:8082/api/user/third-party", {
 const data = await response.json();
 const { accessToken, refreshToken } = data.data;
 
-// 4. 保存 Token
+// 4. Save Token
 localStorage.setItem("accessToken", accessToken);
 localStorage.setItem("refreshToken", refreshToken);
 ```
 
-**说明**:
+**Notes**:
 
-- 支持 Google、Facebook、Twitter 等第三方登录
-- 所有第三方登录都通过 Firebase 返回统一的 ID Token
-- 首次登录时会自动注册新用户
-- 从 token 中自动提取用户信息（邮箱、用户名、头像）
+- Supports third-party login such as Google, Facebook, Twitter, etc.
+- All third-party logins return a unified ID Token through Firebase
+- New users are automatically registered on first login
+- User information (email, username, avatar) is automatically extracted from the token
 
 ---
 
-### 9.3 创建问卷并提交回答
+### 9.3 Create Survey and Submit Answers
 
 ```javascript
-// 1. 创建问卷
+// 1. Create survey
 const createResponse = await fetch("http://localhost:8082/api/survey/create", {
   method: "POST",
   headers: {
@@ -1337,19 +1337,19 @@ const createResponse = await fetch("http://localhost:8082/api/survey/create", {
     Authorization: `Bearer ${accessToken}`,
   },
   body: JSON.stringify({
-    title: "测试问卷",
-    description: "问卷描述",
+    title: "Test Survey",
+    description: "Survey description",
     latitude: 42.3505,
     longitude: -71.1054,
     points: 10,
     questions: [
       {
         type: "single",
-        content: "您对问卷的满意度如何？",
+        content: "How satisfied are you with the survey?",
         required: true,
         options: [
-          { content: "非常满意", label: "A" },
-          { content: "满意", label: "B" },
+          { content: "Very satisfied", label: "A" },
+          { content: "Satisfied", label: "B" },
         ],
       },
     ],
@@ -1358,7 +1358,7 @@ const createResponse = await fetch("http://localhost:8082/api/survey/create", {
 
 const { data: surveyId } = await createResponse.json();
 
-// 2. 提交回答
+// 2. Submit answers
 const submitResponse = await fetch("http://localhost:8082/api/response/", {
   method: "POST",
   headers: {
@@ -1377,42 +1377,42 @@ const submitResponse = await fetch("http://localhost:8082/api/response/", {
 
 ---
 
-## 十、注意事项
+## 10. Notes
 
-1. **Token 管理**:
+1. **Token Management**:
 
-   - Access Token 有效期为 30 分钟
-   - Refresh Token 有效期为 7 天
-   - Token 过期后需要使用 Refresh Token 刷新
+   - Access Token validity period is 30 minutes
+   - Refresh Token validity period is 7 days
+   - After token expiration, Refresh Token must be used to refresh
 
-2. **认证要求**:
+2. **Authentication Requirements**:
 
-   - 大部分接口需要 Bearer Token 认证
-   - 登录、注册等接口不需要认证
-   - 测试时可以使用 TestController 创建测试用户
+   - Most interfaces require Bearer Token authentication
+   - Login, registration, and other interfaces do not require authentication
+   - TestController can be used to create test users during testing
 
-3. **数据类型**:
+3. **Data Types**:
 
-   - 所有 ID 字段都是 String 类型（Firestore documentId）
-   - 经纬度使用 Double 类型
-   - 时间格式：`yyyy-MM-dd HH:mm:ss`
+   - All ID fields are String type (Firestore documentId)
+   - Latitude and longitude use Double type
+   - Time format: `yyyy-MM-dd HH:mm:ss`
 
-4. **积分系统**:
-   - 只有首次完成问卷才会获得积分
-   - 问卷必须设置 `points` 字段才会给积分
-   - 积分增加会自动更新段位信息
+4. **Points System**:
+   - Points are only awarded when completing a survey for the first time
+   - Surveys must have the `points` field set to award points
+   - Point increases automatically update rank information
 
 ---
 
-## 十一、Swagger UI
+## 11. Swagger UI
 
-项目已集成 Swagger UI，可以通过以下地址访问：
+The project has integrated Swagger UI, which can be accessed at the following address:
 
 - **Swagger UI**: `http://localhost:8082/swagger-ui/index.html`
-- **API 文档**: `http://localhost:8082/v3/api-docs`
+- **API Documentation**: `http://localhost:8082/v3/api-docs`
 
 ---
 
-**文档版本**: 1.0  
-**最后更新**: 2024-01-01  
-**维护者**: Survey Team
+**Documentation Version**: 1.0  
+**Last Updated**: 2024-01-01  
+**Maintainer**: Survey Team

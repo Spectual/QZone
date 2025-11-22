@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.qzone.data.model.Survey
+import com.qzone.domain.repository.LocationRepository
 import com.qzone.feature.feed.FeedUiState
 import com.qzone.ui.components.QzoneElevatedSurface
 import com.qzone.ui.components.QzoneTag
@@ -61,7 +62,8 @@ fun FeedScreen(
     state: StateFlow<FeedUiState>,
     onRefresh: () -> Unit,
     onSurveySelected: (String) -> Unit,
-    onLocationPermissionGranted: () -> Unit = {}
+    onLocationPermissionGranted: () -> Unit = {},
+    locationRepository: LocationRepository? = null
 ) {
     val uiState by state.collectAsState()
     val listState = rememberLazyListState()
@@ -173,7 +175,8 @@ fun FeedScreen(
                 items(uiState.surveys, key = { it.id }) { survey ->
                     SurveyCard(
                         survey = survey,
-                        onClick = { onSurveySelected(survey.id) }
+                        onClick = { onSurveySelected(survey.id) },
+                        locationRepository = locationRepository
                     )
                 }
             }

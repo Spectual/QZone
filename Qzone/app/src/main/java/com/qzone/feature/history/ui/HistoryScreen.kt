@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import com.qzone.data.model.SurveyHistoryItem
+import com.qzone.domain.repository.LocationRepository
 import com.qzone.feature.history.HistoryUiState
 import com.qzone.ui.components.QzoneElevatedSurface
 import com.qzone.ui.components.QzoneTag
@@ -56,7 +57,8 @@ import kotlinx.coroutines.flow.StateFlow
 fun HistoryScreen(
     state: StateFlow<HistoryUiState>,
     onQueryChanged: (String) -> Unit,
-    onSurveyClick: (String) -> Unit
+    onSurveyClick: (String) -> Unit,
+    locationRepository: LocationRepository? = null
 ) {
     val uiState by state.collectAsState()
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -141,7 +143,8 @@ fun HistoryScreen(
                 items(items, key = { it.id }) { survey ->
                     SurveyCard(
                         survey = survey,
-                        onClick = { onSurveyClick(survey.id) }
+                        onClick = { onSurveyClick(survey.id) },
+                        locationRepository = locationRepository
                     )
                 }
             }

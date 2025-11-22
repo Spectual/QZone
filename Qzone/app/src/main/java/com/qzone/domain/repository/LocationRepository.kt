@@ -29,4 +29,10 @@ interface LocationRepository {
      * Check if location services are enabled on the device
      */
     fun isLocationEnabled(): Boolean
+    
+    /**
+     * Get address string from latitude and longitude coordinates (reverse geocoding)
+     * @return Address string (e.g., "City, State") or null if geocoding fails
+     */
+    suspend fun getAddressFromCoordinates(latitude: Double, longitude: Double): String?
 }

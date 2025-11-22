@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.qzone.data.local.UserLocalStorage
+import com.google.firebase.auth.GoogleAuthProvider
 import com.qzone.data.model.AuthResult
 import com.qzone.data.model.EditableProfile
 import com.qzone.data.model.RewardRedemption
@@ -17,6 +18,7 @@ import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
 import com.qzone.data.network.model.NetworkUserProfile
 import com.qzone.data.network.model.RegisterRequest
+import com.qzone.data.network.model.ThirdPartyLoginRequest
 import com.qzone.data.network.model.UpdateAvatarRequest
 import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.domain.repository.UserRepository
@@ -70,7 +72,7 @@ class FirebaseUserRepository(
             auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = auth.currentUser
                 ?: return@runCatching AuthResult(success = false, errorMessage = "未找到 Firebase 用户")
-            refreshSession(firebaseUser)
+            refreshSession(firebaseUser, isThirdParty = false)
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
             AuthResult(success = false, errorMessage = throwable.toReadableMessage())
@@ -113,6 +115,26 @@ class FirebaseUserRepository(
             AuthResult(success = true)
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
+            AuthResult(success = false, errorMessage = throwable.toReadableMessage())
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): AuthResult {
+        Log.d(TAG, "signInWithGoogle: starting with token length=${idToken.length}")
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        return runCatching {
+            Log.d(TAG, "signInWithGoogle: calling auth.signInWithCredential")
+            auth.signInWithCredential(credential).await()
+            val firebaseUser = auth.currentUser
+            if (firebaseUser == null) {
+                Log.e(TAG, "signInWithGoogle: auth.currentUser is null after success")
+                return@runCatching AuthResult(success = false, errorMessage = "未找到 Firebase 用户")
+            }
+            Log.d(TAG, "signInWithGoogle: Firebase sign-in success, user=${firebaseUser.uid}, email=${firebaseUser.email}")
+            refreshSession(firebaseUser, isThirdParty = true)
+        }.getOrElse { throwable ->
+            if (throwable is CancellationException) throw throwable
+            Log.e(TAG, "signInWithGoogle: failed", throwable)
             AuthResult(success = false, errorMessage = throwable.toReadableMessage())
         }
     }
@@ -221,32 +243,32 @@ class FirebaseUserRepository(
                 if (throwable is CancellationException) throw throwable
                 Log.e(TAG, "Failed to update avatar url", throwable)
                 return@withContext false
+            }
+            if (!avatarResponse.success) {
+                Log.w(TAG, "Avatar update API failed: ${avatarResponse.msg}")
+                return@withContext false
+            }
+            val current = _currentUser.value
+            val localPath = UserLocalStorage.saveAvatarLocal(imageBytes, filename)
+            val avatarUri = localPath?.let { File(it).toURI().toString() } ?: uploadInfo.publicUrl
+            val updated = current.copy(avatarUrl = avatarUri)
+            _currentUser.emit(updated)
+            val storedNetwork = UserLocalStorage.load()
+            val profileForStorage = (storedNetwork ?: NetworkUserProfile(
+                documentId = updated.id,
+                userName = updated.displayName,
+                email = updated.email,
+                avatarUrl = uploadInfo.publicUrl,
+                currentPoints = updated.totalPoints,
+                rank = updated.levelLabel,
+                pointsToNextRank = (updated.tierPointsGoal - updated.totalPoints).coerceAtLeast(0),
+                createTime = null,
+                updateTime = null
+            )).copy(avatarUrl = uploadInfo.publicUrl)
+            UserLocalStorage.save(profileForStorage)
+            true
         }
-        if (!avatarResponse.success) {
-            Log.w(TAG, "Avatar update API failed: ${avatarResponse.msg}")
-            return@withContext false
-        }
-        val current = _currentUser.value
-        val localPath = UserLocalStorage.saveAvatarLocal(imageBytes, filename)
-        val avatarUri = localPath?.let { File(it).toURI().toString() } ?: uploadInfo.publicUrl
-        val updated = current.copy(avatarUrl = avatarUri)
-        _currentUser.emit(updated)
-        val storedNetwork = UserLocalStorage.load()
-        val profileForStorage = (storedNetwork ?: NetworkUserProfile(
-            documentId = updated.id,
-            userName = updated.displayName,
-            email = updated.email,
-            avatarUrl = uploadInfo.publicUrl,
-            currentPoints = updated.totalPoints,
-            rank = updated.levelLabel,
-            pointsToNextRank = (updated.tierPointsGoal - updated.totalPoints).coerceAtLeast(0),
-            createTime = null,
-            updateTime = null
-        )).copy(avatarUrl = uploadInfo.publicUrl)
-        UserLocalStorage.save(profileForStorage)
-        true
     }
-}
 
     override suspend fun recordRedemption(reward: com.qzone.data.model.Reward) {
         val current = _currentUser.value
@@ -274,11 +296,20 @@ class FirebaseUserRepository(
         return tokens.value?.accessToken?.isNotBlank() == true
     }
 
-    private suspend fun refreshSession(firebaseUser: FirebaseUser): AuthResult {
+    private suspend fun refreshSession(firebaseUser: FirebaseUser, isThirdParty: Boolean = false): AuthResult {
         val tokenResult = firebaseUser.getIdToken(true).await()
-        val idToken = tokenResult.token ?: return AuthResult(success = false, errorMessage = "未能获取 Firebase Token")
+        val idToken = tokenResult.token
+        if (idToken.isNullOrBlank()) {
+            return AuthResult(success = false, errorMessage = "未能获取有效的 Firebase Token")
+        }
         Log.d(TAG, "Firebase token: $idToken")
-        val response = runCatching { apiService.login(LoginRequest(idToken)) }.getOrElse { throwable ->
+        val response = runCatching {
+            if (isThirdParty) {
+                apiService.loginThirdParty(ThirdPartyLoginRequest(tokenId = idToken))
+            } else {
+                apiService.login(LoginRequest(idToken))
+            }
+        }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
             return AuthResult(success = false, errorMessage = throwable.toReadableMessage())
         }

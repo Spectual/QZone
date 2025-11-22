@@ -159,3 +159,8 @@ data class UpdateAvatarRequest(
     @Json(name = "avatarUrl") val avatarUrl: String
 )
 
+data class ThirdPartyLoginRequest(
+    @Json(name = "tokenId")
+    val tokenId: String
+)
+

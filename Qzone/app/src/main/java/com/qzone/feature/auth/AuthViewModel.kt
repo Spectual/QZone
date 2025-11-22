@@ -3,6 +3,7 @@ package com.qzone.feature.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.qzone.data.model.AuthResult
 import com.qzone.domain.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,6 +70,22 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
                 _uiState.update { it.copy(isLoading = false) }
             } else {
                 _uiState.update { it.copy(isLoading = false, errorMessage = result.errorMessage) }
+            }
+        }
+    }
+
+    fun signInWithGoogle(idToken: String, onSuccess: () -> Unit, onFailure: (String?) -> Unit) {
+        Log.d("AuthViewModel", "signInWithGoogle called with token length: ${idToken.length}")
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val result = repository.signInWithGoogle(idToken)
+            Log.d("AuthViewModel", "signInWithGoogle result: success=${result.success}, error=${result.errorMessage}")
+            if (result.success) {
+                onSuccess()
+                _uiState.update { it.copy(isLoading = false) }
+            } else {
+                _uiState.update { it.copy(isLoading = false, errorMessage = result.errorMessage) }
+                onFailure(result.errorMessage)
             }
         }
     }

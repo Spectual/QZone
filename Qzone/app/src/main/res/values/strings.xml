@@ -3,4 +3,7 @@
     <string name="sign_in">Sign in</string>
     <string name="sign_up">Sign up</string>
     <string name="skip">Skip</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="default_web_client_id">33786789573-l7gble3mmtjl57nm5gm850s52n2ngp40.apps.googleusercontent.com</string>
+    <string name="google_sign_in_failed">Google sign-in failed. Please try again.</string>
 </resources>

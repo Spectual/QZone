@@ -70,6 +70,19 @@ class PlaceholderUserRepository : UserRepository {
         return AuthResult(success = true)
     }
 
+    override suspend fun signInWithGoogle(idToken: String): AuthResult {
+        delay(200)
+        if (idToken.isBlank()) {
+            return AuthResult(success = false, errorMessage = "Invalid Google token")
+        }
+        storedProfile = storedProfile.copy(
+            displayName = "Google User",
+            email = "googleuser@example.com"
+        )
+        userFlow.value = storedProfile
+        return AuthResult(success = true)
+    }
+
     override suspend fun updateProfile(edit: EditableProfile) {
         delay(200)
         storedProfile = storedProfile.copy(

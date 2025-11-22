@@ -7,4 +7,6 @@ interface RewardRepository {
     val availableRewards: Flow<List<Reward>>
     suspend fun getReward(id: String): Reward?
     suspend fun redeemReward(reward: Reward): Boolean
+
+    class InsufficientPointsException(message: String) : Exception(message)
 }

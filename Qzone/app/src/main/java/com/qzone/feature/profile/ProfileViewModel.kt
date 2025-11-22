@@ -7,6 +7,7 @@ import com.qzone.data.model.EditableProfile
 import com.qzone.data.model.UserProfile
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.UserRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -119,6 +120,23 @@ class ProfileViewModel(
         viewModelScope.launch {
             userRepository.signOut()
             onSignedOut()
+        }
+    }
+
+    fun uploadAvatar(imageBytes: ByteArray, contentType: String, filename: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val success = userRepository.uploadAvatar(imageBytes, contentType, filename)
+                if (success) {
+                    onResult(true, "Avatar updated")
+                } else {
+                    onResult(false, "Failed to update avatar")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                onResult(false, t.message ?: "Failed to update avatar")
+            }
         }
     }
 

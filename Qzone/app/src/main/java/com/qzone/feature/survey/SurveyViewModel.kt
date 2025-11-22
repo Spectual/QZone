@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import android.util.Log
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
+import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
 import com.qzone.data.network.QzoneApiClient
@@ -38,7 +39,8 @@ data class SurveyUiState(
 class SurveyViewModel(
     private val repository: SurveyRepository,
     private val userRepository: UserRepository,
-    private val surveyId: String
+    private val surveyId: String,
+    private val localSurveyRepository: LocalSurveyRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SurveyUiState())
@@ -48,6 +50,13 @@ class SurveyViewModel(
         viewModelScope.launch {
             val survey = repository.getSurveyById(surveyId)
             _uiState.update { it.copy(survey = survey) }
+            survey?.let {
+                runCatching {
+                    localSurveyRepository.saveSurvey(it)
+                }.onFailure { throwable ->
+                    Log.w(TAG, "Failed to cache survey locally", throwable)
+                }
+            }
         }
     }
 
@@ -125,6 +134,7 @@ class SurveyViewModel(
                 }
             }
             Log.d(TAG, "Submitting answers: surveyId=" + surveyId + ", items=" + items.size)
+            Log.d(TAG, "Submit payload JSON: ${items.toDebugJson()}")
             val response = try {
                 QzoneApiClient.service.submitResponses(items)
             } catch (t: Throwable) {
@@ -148,13 +158,23 @@ class SurveyViewModel(
         fun factory(
             repository: SurveyRepository,
             userRepository: UserRepository,
-            surveyId: String
+            surveyId: String,
+            localSurveyRepository: LocalSurveyRepository
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SurveyViewModel(repository, userRepository, surveyId) as T
+                    return SurveyViewModel(repository, userRepository, surveyId, localSurveyRepository) as T
                 }
             }
+    }
+}
+
+private fun List<SubmitAnswerItem>.toDebugJson(): String {
+    return joinToString(prefix = "[", postfix = "]") { item ->
+        val selectedPart = item.selected?.let { "\"$it\"" } ?: "null"
+        val contentEscaped = item.content?.replace("\"", "\\\"")
+        val contentPart = contentEscaped?.let { "\"$it\"" } ?: "null"
+        "{\"questionId\":\"${item.questionId}\",\"selected\":$selectedPart,\"content\":$contentPart}"
     }
 }

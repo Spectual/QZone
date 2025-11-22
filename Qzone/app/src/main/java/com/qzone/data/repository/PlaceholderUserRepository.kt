@@ -106,6 +106,13 @@ class PlaceholderUserRepository : UserRepository {
         userFlow.value = storedProfile
     }
 
+    override suspend fun updatePoints(totalPoints: Int) {
+        delay(200)
+        val current = userFlow.value
+        storedProfile = current.copy(totalPoints = totalPoints)
+        userFlow.value = storedProfile
+    }
+
     override suspend fun recordRedemption(reward: Reward) {
         delay(200)
         val formatter = SimpleDateFormat("MM/dd/yy", Locale.getDefault())
@@ -125,6 +132,18 @@ class PlaceholderUserRepository : UserRepository {
         delay(200)
         storedProfile = defaultProfile
         userFlow.value = storedProfile
+    }
+
+    override suspend fun uploadAvatar(imageBytes: ByteArray, contentType: String, filename: String): Boolean {
+        delay(200)
+        val fakeUrl = "https://example.com/avatar/$filename"
+        storedProfile = storedProfile.copy(avatarUrl = fakeUrl)
+        userFlow.value = storedProfile
+        return true
+    }
+
+    override fun hasCachedSession(): Boolean {
+        return storedProfile != defaultProfile
     }
 
     private data class PlaceholderCredential(

@@ -123,8 +123,9 @@ fun SurveyCard(
                          color = colorScheme.primary
                      )
                 } else {
+                    val displayCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
                     QzoneTag(
-                        text = "${survey.questions.size} questions",
+                        text = "$displayCount questions",
                         containerColor = colorScheme.surfaceVariant,
                         contentColor = colorScheme.onSurfaceVariant
                     )

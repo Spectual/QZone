@@ -17,6 +17,7 @@ data class SurveyEntity(
     val points: Int = 0,
     val isCompleted: Boolean = false,
     val currentQuestionIndex: Int = 0,
+    val questionCount: Int = 0,
     val answersJson: String = "", // Store answers as JSON
     val questionsJson: String = "", // Store questions as JSON
     val syncedAt: Long = System.currentTimeMillis()
@@ -30,6 +31,7 @@ data class SurveyEntity(
             longitude = longitude,
             points = points,
             questions = questions,
+            questionCount = if (questionCount > 0) questionCount else questions.size,
             isCompleted = isCompleted,
             currentQuestionIndex = currentQuestionIndex,
             // Simple JSON parsing for answers map - in a real app use Gson/Moshi
@@ -68,6 +70,7 @@ data class SurveyEntity(
                 points = survey.points,
                 isCompleted = survey.isCompleted,
                 currentQuestionIndex = survey.currentQuestionIndex,
+                questionCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size,
                 answersJson = survey.answers.entries.joinToString(";") { (k, v) -> "$k=${v.joinToString(",")}" },
                 questionsJson = "", // Will be handled by QuestionEntity
                 syncedAt = System.currentTimeMillis()

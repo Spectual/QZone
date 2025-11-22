@@ -154,7 +154,8 @@ fun QzoneNavHost(
                 onSurveySelected = { surveyId ->
                     navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
                 },
-                onLocationPermissionGranted = feedViewModel::onLocationPermissionGranted
+                onLocationPermissionGranted = feedViewModel::onLocationPermissionGranted,
+                locationRepository = appState.locationRepository
             )
         }
         composable(
@@ -265,7 +266,8 @@ fun QzoneNavHost(
                 onQueryChanged = historyViewModel::onQueryChange,
                 onSurveyClick = { surveyId ->
                     navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
-                }
+                },
+                locationRepository = appState.locationRepository
             )
         }
         composable(QzoneDestination.Rewards.route) {

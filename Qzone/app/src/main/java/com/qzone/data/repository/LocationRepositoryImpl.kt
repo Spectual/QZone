@@ -265,6 +265,10 @@ class LocationRepositoryImpl(
         }
     }
 
+    override suspend fun getAddressFromCoordinates(latitude: Double, longitude: Double): String? {
+        return getAddressFromLocation(latitude, longitude)
+    }
+
     private suspend fun getAddressFromLocation(latitude: Double, longitude: Double): String? {
         return try {
             if (geocoder == null) return null

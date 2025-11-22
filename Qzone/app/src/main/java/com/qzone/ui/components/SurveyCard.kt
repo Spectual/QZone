@@ -10,6 +10,11 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,14 +25,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.qzone.data.model.Survey
+import com.qzone.domain.repository.LocationRepository
 
 @Composable
 fun SurveyCard(
     survey: Survey,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    locationRepository: LocationRepository? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    var locationAddress by remember(survey.id, survey.latitude, survey.longitude) { 
+        mutableStateOf<String?>(null) 
+    }
+    
+    // Fetch address from coordinates
+    LaunchedEffect(survey.id, survey.latitude, survey.longitude) {
+        if (locationRepository != null) {
+            locationAddress = locationRepository.getAddressFromCoordinates(
+                survey.latitude,
+                survey.longitude
+            )
+        }
+    }
     val isDark = colorScheme.background.luminance() < 0.2f
     val gradientColors = if (isDark) {
         listOf(Color(0xFF020203), Color(0xFF16171F), Color(0xFF2C2E37))
@@ -93,7 +113,7 @@ fun SurveyCard(
                 modifier = Modifier.size(16.dp)
             )
             Text(
-                text = "Location based survey",
+                text = locationAddress ?: String.format("%.4f, %.4f", survey.latitude, survey.longitude),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onSurfaceVariant
             )

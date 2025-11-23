@@ -57,6 +57,12 @@ import com.qzone.ui.components.qzoneScreenBackground
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+import androidx.compose.ui.platform.LocalContext
+import android.hardware.Sensor
+import android.hardware.SensorManager
+import androidx.compose.runtime.DisposableEffect
+import com.qzone.util.ShakeDetector
+
 @Composable
 fun FeedScreen(
     state: StateFlow<FeedUiState>,
@@ -69,6 +75,23 @@ fun FeedScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val context = LocalContext.current
+
+    // Setup ShakeDetector
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
+        val shakeDetector = ShakeDetector {
+            onRefresh()
+        }
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if (accelerometer != null) {
+            sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_UI)
+        }
+
+        onDispose {
+            sensorManager.unregisterListener(shakeDetector)
+        }
+    }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -192,12 +215,22 @@ fun FeedScreen(
                 label = { Text("Top") },
                 leadingIcon = { Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = null) }
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            AssistChip(
-                onClick = onRefresh,
-                label = { Text("Refresh") },
-                leadingIcon = { Icon(imageVector = Icons.Default.Refresh, contentDescription = null) }
-            )
+            // Refresh removed in favor of shake-to-refresh
+        }
+        
+        // Display a small hint for shake-to-refresh
+        if (uiState.surveys.isNotEmpty()) {
+            Row(
+               modifier = Modifier.fillMaxWidth(),
+               horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Shake device to refresh",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
         }
     }
 }

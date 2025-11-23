@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 
+import com.qzone.data.model.SurveyStatus
+
 class PlaceholderSurveyRepository : SurveyRepository {
 
     private val completedIds = mutableSetOf<String>()
@@ -39,7 +41,7 @@ class PlaceholderSurveyRepository : SurveyRepository {
     override suspend fun markSurveyCompleted(id: String) {
         completedIds.add(id)
         surveysFlow.value = surveysFlow.value.map { survey ->
-            if (survey.id == id) survey.copy(isCompleted = true) else survey
+            if (survey.id == id) survey.copy(isCompleted = true, status = SurveyStatus.COMPLETE) else survey
         }
     }
 
@@ -53,14 +55,29 @@ class PlaceholderSurveyRepository : SurveyRepository {
 
     override suspend fun saveSurveyProgress(survey: Survey) {
         surveysFlow.value = surveysFlow.value.map {
-            if (it.id == survey.id) survey else it
+            if (it.id == survey.id) {
+                // If answers are present but not complete, mark as PARTIAL
+                val newStatus = if (survey.answers.isNotEmpty() && !survey.isCompleted) {
+                    SurveyStatus.PARTIAL
+                } else {
+                    survey.status
+                }
+                survey.copy(status = newStatus)
+            } else it
         }
+    }
+
+    override suspend fun refreshSurveyHistory() {
+        // No-op for placeholder
+        delay(200)
     }
 
     private fun applyCompletion(source: List<Survey>): List<Survey> {
         if (completedIds.isEmpty()) return source
         return source.map { survey ->
-            if (completedIds.contains(survey.id)) survey.copy(isCompleted = true) else survey
+            if (completedIds.contains(survey.id)) {
+                survey.copy(isCompleted = true, status = SurveyStatus.COMPLETE)
+            } else survey
         }
     }
 

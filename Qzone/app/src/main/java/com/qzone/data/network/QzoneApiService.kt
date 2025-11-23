@@ -59,5 +59,8 @@ interface QzoneApiService {
 
     @POST("/api/user/avatar")
     suspend fun updateAvatar(@Body request: UpdateAvatarRequest): ApiResult<String>
+
+    @POST("/api/response/user/surveys")
+    suspend fun getUserSurveyHistory(@Body request: com.qzone.data.network.model.UserSurveyHistoryRequest): ApiResult<com.qzone.data.network.model.UserSurveyHistoryResponse>
 }
 

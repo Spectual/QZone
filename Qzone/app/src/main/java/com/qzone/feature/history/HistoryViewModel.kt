@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+import com.qzone.data.model.SurveyStatus
+
 data class HistoryUiState(
     val query: String = "",
     val completedSurveys: List<Survey> = emptyList(),
@@ -28,12 +30,15 @@ class HistoryViewModel(
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
     init {
+        refreshHistory()
         viewModelScope.launch {
             combine(
                 surveyRepository.getCompletedSurveys(),
                 surveyRepository.getUncompletedSurveys()
-            ) { completed, inProgress ->
-                completed to inProgress
+            ) { completed, uncompleted ->
+                // Filter uncompleted surveys to only include those with PARTIAL status
+                val actualInProgress = uncompleted.filter { it.status == SurveyStatus.PARTIAL }
+                completed to actualInProgress
             }.collect { (completed, inProgress) ->
                 _uiState.update {
                     it.copy(
@@ -43,6 +48,16 @@ class HistoryViewModel(
                         filteredInProgress = filter(inProgress, it.query)
                     )
                 }
+            }
+        }
+    }
+
+    fun refreshHistory() {
+        viewModelScope.launch {
+            try {
+                surveyRepository.refreshSurveyHistory()
+            } catch (e: Exception) {
+                // Handle error if needed, currently just logging in repository
             }
         }
     }

@@ -164,3 +164,28 @@ data class ThirdPartyLoginRequest(
     val tokenId: String
 )
 
+data class UserSurveyHistoryRequest(
+    @Json(name = "page") val page: Int,
+    @Json(name = "pageSize") val pageSize: Int,
+    @Json(name = "status") val status: String? = null
+)
+
+data class UserSurveyHistoryResponse(
+    @Json(name = "total") val total: Int,
+    @Json(name = "records") val records: List<UserSurveyRecord>
+)
+
+data class UserSurveyRecord(
+    @Json(name = "surveyId") val surveyId: String,
+    @Json(name = "surveyTitle") val surveyTitle: String,
+    @Json(name = "surveyDescription") val surveyDescription: String,
+    @Json(name = "surveyImageUrl") val surveyImageUrl: String?,
+    @Json(name = "responseId") val responseId: String?,
+    @Json(name = "responseTime") val responseTime: String?,
+    @Json(name = "answeredQuestions") val answeredQuestions: Int,
+    @Json(name = "totalQuestions") val totalQuestions: Int,
+    @Json(name = "completionRate") val completionRate: Double,
+    @Json(name = "isComplete") val isComplete: Boolean,
+    @Json(name = "status") val status: String
+)
+

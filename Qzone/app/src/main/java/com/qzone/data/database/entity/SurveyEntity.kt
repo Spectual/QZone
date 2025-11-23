@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
 import com.qzone.data.model.SurveyOption
+import com.qzone.data.model.SurveyStatus
 
 @Entity(tableName = "surveys")
 data class SurveyEntity(
@@ -16,6 +17,7 @@ data class SurveyEntity(
     val longitude: Double,
     val points: Int = 0,
     val isCompleted: Boolean = false,
+    val status: String = SurveyStatus.EMPTY.name,
     val currentQuestionIndex: Int = 0,
     val questionCount: Int = 0,
     val answersJson: String = "", // Store answers as JSON
@@ -23,6 +25,12 @@ data class SurveyEntity(
     val syncedAt: Long = System.currentTimeMillis()
 ) {
     fun toSurvey(questions: List<SurveyQuestion> = emptyList()): Survey {
+        val surveyStatus = try {
+            SurveyStatus.valueOf(status)
+        } catch (e: IllegalArgumentException) {
+            if (isCompleted) SurveyStatus.COMPLETE else SurveyStatus.EMPTY
+        }
+
         return Survey(
             id = id,
             title = title,
@@ -33,6 +41,7 @@ data class SurveyEntity(
             questions = questions,
             questionCount = if (questionCount > 0) questionCount else questions.size,
             isCompleted = isCompleted,
+            status = surveyStatus,
             currentQuestionIndex = currentQuestionIndex,
             // Simple JSON parsing for answers map - in a real app use Gson/Moshi
             answers = if (answersJson.isNotEmpty()) {
@@ -69,6 +78,7 @@ data class SurveyEntity(
                 longitude = survey.longitude,
                 points = survey.points,
                 isCompleted = survey.isCompleted,
+                status = survey.status.name,
                 currentQuestionIndex = survey.currentQuestionIndex,
                 questionCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size,
                 answersJson = survey.answers.entries.joinToString(";") { (k, v) -> "$k=${v.joinToString(",")}" },

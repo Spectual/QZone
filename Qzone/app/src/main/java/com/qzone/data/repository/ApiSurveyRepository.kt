@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 
+import com.qzone.data.model.SurveyStatus
+import com.qzone.data.network.model.UserSurveyHistoryRequest
+
 class ApiSurveyRepository : SurveyRepository {
     private val surveysFlow = MutableStateFlow<List<Survey>>(emptyList())
     override val nearbySurveys: Flow<List<Survey>> = surveysFlow.asStateFlow()
@@ -55,7 +58,8 @@ class ApiSurveyRepository : SurveyRepository {
                     points = 0,
                     questions = emptyList(),
                     questionCount = 0,
-                    isCompleted = false
+                    isCompleted = false,
+                    status = SurveyStatus.EMPTY
                 )
             }
         } else {
@@ -105,7 +109,7 @@ class ApiSurveyRepository : SurveyRepository {
         // Optionally call API to mark as completed
         // For now, just update local state
         surveysFlow.value = surveysFlow.value.map {
-            if (it.id == id) it.copy(isCompleted = true) else it
+            if (it.id == id) it.copy(isCompleted = true, status = SurveyStatus.COMPLETE) else it
         }
     }
 
@@ -119,6 +123,57 @@ class ApiSurveyRepository : SurveyRepository {
 
     override suspend fun saveSurveyProgress(survey: Survey) {
         updateCachedSurvey(survey)
+    }
+
+    override suspend fun refreshSurveyHistory() {
+        try {
+            val response = QzoneApiClient.service.getUserSurveyHistory(
+                UserSurveyHistoryRequest(page = 1, pageSize = 100)
+            )
+            if (response.success && response.data != null) {
+                val historyRecords = response.data.records
+                val currentSurveys = surveysFlow.value.toMutableList()
+
+                historyRecords.forEach { record ->
+                    val existingIndex = currentSurveys.indexOfFirst { it.id == record.surveyId }
+                    val status = try {
+                        SurveyStatus.valueOf(record.status)
+                    } catch (e: Exception) {
+                        if (record.isComplete) SurveyStatus.COMPLETE else SurveyStatus.PARTIAL
+                    }
+
+                    if (existingIndex >= 0) {
+                        // Update existing survey status
+                        val existing = currentSurveys[existingIndex]
+                        currentSurveys[existingIndex] = existing.copy(
+                            isCompleted = record.isComplete,
+                            status = status,
+                            questionCount = record.totalQuestions
+                        )
+                    } else {
+                        // Add survey if missing (basic info from history)
+                        currentSurveys.add(
+                            Survey(
+                                id = record.surveyId,
+                                title = record.surveyTitle,
+                                description = record.surveyDescription,
+                                latitude = 0.0, // Missing from history
+                                longitude = 0.0, // Missing from history
+                                points = 0, // Missing from history
+                                isCompleted = record.isComplete,
+                                status = status,
+                                questionCount = record.totalQuestions
+                            )
+                        )
+                    }
+                }
+                surveysFlow.value = currentSurveys
+            } else {
+                Log.w(TAG, "Failed to fetch survey history: ${response.msg}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching survey history", e)
+        }
     }
 
     private fun updateCachedSurvey(updated: Survey) {

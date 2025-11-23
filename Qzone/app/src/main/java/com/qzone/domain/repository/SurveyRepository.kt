@@ -13,4 +13,5 @@ interface SurveyRepository {
     fun getCompletedSurveys(): Flow<List<Survey>>
     fun getUncompletedSurveys(): Flow<List<Survey>>
     suspend fun saveSurveyProgress(survey: Survey)
+    suspend fun refreshSurveyHistory()
 }

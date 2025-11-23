@@ -183,7 +183,13 @@ fun QzoneNavHost(
         }
         composable(QzoneDestination.Profile.route) {
             val context = LocalContext.current
-            val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.factory(appState.userRepository, appState.rewardRepository))
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = ProfileViewModel.factory(
+                    appState.userRepository,
+                    appState.rewardRepository,
+                    appState.localSurveyRepository
+                )
+            )
             val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
                 if (uri != null) {
                     val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
@@ -218,7 +224,11 @@ fun QzoneNavHost(
             }
             val profileViewModel: ProfileViewModel = viewModel(
                 viewModelStoreOwner = parentEntry,
-                factory = ProfileViewModel.factory(appState.userRepository, appState.rewardRepository)
+                factory = ProfileViewModel.factory(
+                    appState.userRepository,
+                    appState.rewardRepository,
+                    appState.localSurveyRepository
+                )
             )
             WalletScreen(
                 state = profileViewModel.uiState,
@@ -226,7 +236,13 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.EditProfile.route) {
-            val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.factory(appState.userRepository, appState.rewardRepository))
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = ProfileViewModel.factory(
+                    appState.userRepository,
+                    appState.rewardRepository,
+                    appState.localSurveyRepository
+                )
+            )
             EditProfileScreen(
                 state = profileViewModel.editState,
                 onNameChanged = profileViewModel::onNameChanged,
@@ -241,7 +257,13 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.ProfileSettings.route) {
-            val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.factory(appState.userRepository, appState.rewardRepository))
+            val profileViewModel: ProfileViewModel = viewModel(
+                factory = ProfileViewModel.factory(
+                    appState.userRepository,
+                    appState.rewardRepository,
+                    appState.localSurveyRepository
+                )
+            )
             ProfileSettingsScreen(
                 onBack = { navController.popBackStack() },
                 onEditProfile = { navController.navigate(QzoneDestination.EditProfile.route) },

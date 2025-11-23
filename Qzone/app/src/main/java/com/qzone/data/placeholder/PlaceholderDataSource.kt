@@ -4,6 +4,7 @@ import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyHistoryItem
 import com.qzone.data.model.SurveyOption
 import com.qzone.data.model.SurveyQuestion
+import com.qzone.data.model.SurveyStatus
 import com.qzone.data.model.UserProfile
 import com.qzone.data.model.Reward
 import com.qzone.data.model.RewardRedemption
@@ -105,7 +106,8 @@ private fun MockSurveyPayload.toSurvey(id: String): Survey {
         latitude = latitude,
         longitude = longitude,
         points = points,
-        questions = questions.mapIndexed { index, question ->
+        status = SurveyStatus.EMPTY,
+        questions = questions.mapIndexed { _, question ->
             SurveyQuestion(
                 id = question.id,
                 type = question.type,

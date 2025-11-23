@@ -12,7 +12,8 @@ data class Reward(
     val expiryDate: String,
     val terms: String,
     val qrCodePlaceholder: String = "",
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val imageResId: Int? = null
 ) : Parcelable
 
 @Parcelize

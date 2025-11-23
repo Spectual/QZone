@@ -1,5 +1,6 @@
 package com.qzone.feature.rewards.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,6 +35,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +47,8 @@ import com.qzone.ui.components.QzoneElevatedSurface
 import com.qzone.ui.components.QzoneTag
 import com.qzone.ui.components.qzoneScreenBackground
 import kotlinx.coroutines.flow.StateFlow
+
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun RewardsScreen(
@@ -120,14 +126,19 @@ private fun RewardCard(
                 .padding(horizontal = 24.dp, vertical = 22.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            reward.imageUrl?.let { image ->
+            val imageModel = reward.imageResId ?: reward.imageUrl
+            if (imageModel != null) {
                 AsyncImage(
-                    model = image,
+                    model = imageModel,
                     contentDescription = reward.brandName,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp),
-                    contentScale = ContentScale.Crop
+                        .height(140.dp)
+                        .background(Color(0xFFF5F5F5)) // Off-white background
+                        .padding(16.dp),
+                    contentScale = ContentScale.Fit,
+                    error = rememberVectorPainter(Icons.Default.BrokenImage),
+                    placeholder = rememberVectorPainter(Icons.Default.Image)
                 )
             }
 

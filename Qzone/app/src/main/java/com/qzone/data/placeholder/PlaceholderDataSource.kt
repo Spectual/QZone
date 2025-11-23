@@ -8,6 +8,7 @@ import com.qzone.data.model.UserProfile
 import com.qzone.data.model.Reward
 import com.qzone.data.model.RewardRedemption
 import com.qzone.data.model.RedemptionStatus
+import com.qzone.R
 
 object PlaceholderDataSource {
 
@@ -36,7 +37,9 @@ object PlaceholderDataSource {
             pointsCost = 150,
             expiryDate = "Valid until February 2026",
             terms = "Redeemable in-store. Not valid with other offers.",
-            qrCodePlaceholder = "QR-MCD-001"
+            qrCodePlaceholder = "QR-MCD-001",
+            imageUrl = null,
+            imageResId = R.drawable.logo_mcdonalds
         ),
         Reward(
             id = "reward_kfc",
@@ -45,7 +48,9 @@ object PlaceholderDataSource {
             pointsCost = 120,
             expiryDate = "Valid until March 2026",
             terms = "Single use coupon. Present QR code at checkout.",
-            qrCodePlaceholder = "QR-KFC-120"
+            qrCodePlaceholder = "QR-KFC-120",
+            imageUrl = null,
+            imageResId = R.drawable.logo_kfc
         ),
         Reward(
             id = "reward_starbucks",
@@ -54,7 +59,9 @@ object PlaceholderDataSource {
             pointsCost = 150,
             expiryDate = "Valid until September 2026",
             terms = "Excludes seasonal limited items.",
-            qrCodePlaceholder = "QR-SB-150"
+            qrCodePlaceholder = "QR-SB-150",
+            imageUrl = null,
+            imageResId = R.drawable.logo_starbucks
         ),
         Reward(
             id = "reward_vapiano",
@@ -63,7 +70,9 @@ object PlaceholderDataSource {
             pointsCost = 100,
             expiryDate = "Valid until October 2026",
             terms = "Valid on weekdays only.",
-            qrCodePlaceholder = "QR-VAP-100"
+            qrCodePlaceholder = "QR-VAP-100",
+            imageUrl = null,
+            imageResId = R.drawable.logo_vapiano
         )
     )
 

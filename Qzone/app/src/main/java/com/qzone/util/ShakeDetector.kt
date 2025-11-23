@@ -9,10 +9,15 @@ import kotlin.math.sqrt
 class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
 
     private var lastUpdate: Long = 0
+    private var lastShakeTime: Long = 0
     private var lastX: Float = 0f
     private var lastY: Float = 0f
     private var lastZ: Float = 0f
-    private val shakeThreshold = 800 // Sensitivity, lower is more sensitive
+    
+    // Increased threshold to reduce sensitivity (was 800)
+    private val shakeThreshold = 1500 
+    // Cooldown to prevent multiple triggers from a single shake action
+    private val minTimeBetweenShakesMs = 1500L 
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
@@ -29,7 +34,10 @@ class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
                 val speed = Math.abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000
 
                 if (speed > shakeThreshold) {
-                    onShake()
+                    if ((curTime - lastShakeTime) > minTimeBetweenShakesMs) {
+                        lastShakeTime = curTime
+                        onShake()
+                    }
                 }
 
                 lastX = x

@@ -187,7 +187,8 @@ fun QzoneNavHost(
                 factory = ProfileViewModel.factory(
                     appState.userRepository,
                     appState.rewardRepository,
-                    appState.localSurveyRepository
+                    appState.localSurveyRepository,
+                    appState.surveyRepository
                 )
             )
             val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -227,7 +228,8 @@ fun QzoneNavHost(
                 factory = ProfileViewModel.factory(
                     appState.userRepository,
                     appState.rewardRepository,
-                    appState.localSurveyRepository
+                    appState.localSurveyRepository,
+                    appState.surveyRepository
                 )
             )
             WalletScreen(
@@ -240,7 +242,8 @@ fun QzoneNavHost(
                 factory = ProfileViewModel.factory(
                     appState.userRepository,
                     appState.rewardRepository,
-                    appState.localSurveyRepository
+                    appState.localSurveyRepository,
+                    appState.surveyRepository
                 )
             )
             EditProfileScreen(
@@ -261,7 +264,8 @@ fun QzoneNavHost(
                 factory = ProfileViewModel.factory(
                     appState.userRepository,
                     appState.rewardRepository,
-                    appState.localSurveyRepository
+                    appState.localSurveyRepository,
+                    appState.surveyRepository
                 )
             )
             ProfileSettingsScreen(

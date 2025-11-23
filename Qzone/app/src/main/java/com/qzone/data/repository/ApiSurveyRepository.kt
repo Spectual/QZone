@@ -14,10 +14,14 @@ import kotlinx.coroutines.flow.map
 
 import com.qzone.data.model.SurveyStatus
 import com.qzone.data.network.model.UserSurveyHistoryRequest
+import java.util.concurrent.TimeUnit
+import retrofit2.HttpException
 
 class ApiSurveyRepository : SurveyRepository {
     private val surveysFlow = MutableStateFlow<List<Survey>>(emptyList())
     override val nearbySurveys: Flow<List<Survey>> = surveysFlow.asStateFlow()
+    private val surveyStatusCache = mutableMapOf<String, SurveyProgressSnapshot>()
+    private var lastHistorySyncMs = 0L
 
     override suspend fun refreshNearby(userLocation: UserLocation?, radiusMeters: Int) {
         val lat = userLocation?.latitude ?: 0.0
@@ -30,6 +34,8 @@ class ApiSurveyRepository : SurveyRepository {
         val precisionFallbacks = listOf(9, 8, 7, 6)
         var foundData: List<com.qzone.data.model.NearbyLocation>? = null
 
+        var lastError: Throwable? = null
+
         for (p in precisionFallbacks) {
             val body = com.qzone.data.network.model.NearbyLocationRequest(
                 userLat = lat,
@@ -40,7 +46,18 @@ class ApiSurveyRepository : SurveyRepository {
                 includeDistance = includeDistance,
                 sortByDistance = sortByDistance
             )
-            val result = com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(body)
+            val result = try {
+                com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(body)
+            } catch (t: Throwable) {
+                lastError = t
+                if (t is HttpException && t.code() == 401) {
+                    Log.w(TAG, "Unauthorized while fetching nearby surveys; aborting retries")
+                    break
+                } else {
+                    Log.e(TAG, "Failed to fetch nearby surveys (precision=$p)", t)
+                    continue
+                }
+            }
             if (result.success && !result.data.isNullOrEmpty()) {
                 foundData = result.data
                 break
@@ -48,22 +65,35 @@ class ApiSurveyRepository : SurveyRepository {
         }
 
         if (foundData != null) {
-            surveysFlow.value = foundData.map { loc ->
-                Survey(
+            ensureHistorySynced()
+            val existingList = surveysFlow.value
+            val currentMap = existingList.associateBy { it.id }.toMutableMap()
+            val orderedIds = mutableListOf<String>()
+            foundData.forEach { loc ->
+                val existing = currentMap[loc.documentId]
+                val snapshot = surveyStatusCache[loc.documentId] ?: existing?.toProgressSnapshot()
+                val merged = Survey(
                     id = loc.documentId,
                     title = loc.title,
                     description = loc.description,
                     latitude = loc.latitude,
                     longitude = loc.longitude,
-                    points = 0,
-                    questions = emptyList(),
-                    questionCount = 0,
-                    isCompleted = false,
-                    status = SurveyStatus.EMPTY
+                    points = existing?.points ?: 0,
+                    questions = existing?.questions ?: emptyList(),
+                    questionCount = snapshot?.questionCount ?: existing?.questionCount ?: 0,
+                    isCompleted = snapshot?.isCompleted ?: false,
+                    status = snapshot?.status ?: SurveyStatus.EMPTY
                 )
+                currentMap[loc.documentId] = merged
+                orderedIds.add(loc.documentId)
             }
+            val orderedList = orderedIds.mapNotNull { currentMap[it] }
+            val remaining = existingList.filter { it.id !in orderedIds }.mapNotNull { currentMap[it.id] }
+            surveysFlow.value = orderedList + remaining
         } else {
-            surveysFlow.value = emptyList()
+            if (lastError != null) {
+                Log.w(TAG, "Unable to load nearby surveys, keeping existing cache")
+            }
         }
     }
 
@@ -108,6 +138,7 @@ class ApiSurveyRepository : SurveyRepository {
     override suspend fun markSurveyCompleted(id: String) {
         // Optionally call API to mark as completed
         // For now, just update local state
+        rememberProgress(id, true, SurveyStatus.COMPLETE, questionCount = surveysFlow.value.firstOrNull { it.id == id }?.questionCount ?: 0)
         surveysFlow.value = surveysFlow.value.map {
             if (it.id == id) it.copy(isCompleted = true, status = SurveyStatus.COMPLETE) else it
         }
@@ -126,59 +157,21 @@ class ApiSurveyRepository : SurveyRepository {
     }
 
     override suspend fun refreshSurveyHistory() {
-        try {
-            val response = QzoneApiClient.service.getUserSurveyHistory(
-                UserSurveyHistoryRequest(page = 1, pageSize = 100)
-            )
-            if (response.success && response.data != null) {
-                val historyRecords = response.data.records
-                val currentSurveys = surveysFlow.value.toMutableList()
-
-                historyRecords.forEach { record ->
-                    val existingIndex = currentSurveys.indexOfFirst { it.id == record.surveyId }
-                    val status = try {
-                        SurveyStatus.valueOf(record.status)
-                    } catch (e: Exception) {
-                        if (record.isComplete) SurveyStatus.COMPLETE else SurveyStatus.PARTIAL
-                    }
-
-                    if (existingIndex >= 0) {
-                        // Update existing survey status
-                        val existing = currentSurveys[existingIndex]
-                        currentSurveys[existingIndex] = existing.copy(
-                            isCompleted = record.isComplete,
-                            status = status,
-                            questionCount = record.totalQuestions
-                        )
-                    } else {
-                        // Add survey if missing (basic info from history)
-                        currentSurveys.add(
-                            Survey(
-                                id = record.surveyId,
-                                title = record.surveyTitle,
-                                description = record.surveyDescription,
-                                latitude = 0.0, // Missing from history
-                                longitude = 0.0, // Missing from history
-                                points = 0, // Missing from history
-                                isCompleted = record.isComplete,
-                                status = status,
-                                questionCount = record.totalQuestions
-                            )
-                        )
-                    }
-                }
-                surveysFlow.value = currentSurveys
-            } else {
-                Log.w(TAG, "Failed to fetch survey history: ${response.msg}")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching survey history", e)
+        if (syncSurveyHistory()) {
+            lastHistorySyncMs = System.currentTimeMillis()
         }
+    }
+
+    override suspend fun clearCachedSurveys() {
+        surveyStatusCache.clear()
+        lastHistorySyncMs = 0L
+        surveysFlow.value = emptyList()
     }
 
     private fun updateCachedSurvey(updated: Survey) {
         val current = surveysFlow.value
         val index = current.indexOfFirst { it.id == updated.id }
+        rememberProgress(updated.id, updated.isCompleted, updated.status, updated.questionCount)
         surveysFlow.value = if (index >= 0) {
             current.map { if (it.id == updated.id) updated else it }
         } else {
@@ -206,7 +199,88 @@ class ApiSurveyRepository : SurveyRepository {
         }
     }
 
+    private fun rememberProgress(
+        id: String,
+        isCompleted: Boolean,
+        status: SurveyStatus,
+        questionCount: Int
+    ) {
+        surveyStatusCache[id] = SurveyProgressSnapshot(isCompleted, status, questionCount)
+    }
+
+    private suspend fun ensureHistorySynced() {
+        val now = System.currentTimeMillis()
+        val needsSync = surveyStatusCache.isEmpty() || now - lastHistorySyncMs > HISTORY_SYNC_WINDOW_MS
+        if (needsSync && syncSurveyHistory()) {
+            lastHistorySyncMs = now
+        }
+    }
+
+    private suspend fun syncSurveyHistory(): Boolean {
+        return try {
+            val response = QzoneApiClient.service.getUserSurveyHistory(
+                UserSurveyHistoryRequest(page = 1, pageSize = 100)
+            )
+            if (response.success && response.data != null) {
+                val historyRecords = response.data.records
+                val currentSurveys = surveysFlow.value.toMutableList()
+
+                historyRecords.forEach { record ->
+                    val existingIndex = currentSurveys.indexOfFirst { it.id == record.surveyId }
+                    val status = try {
+                        SurveyStatus.valueOf(record.status)
+                    } catch (e: Exception) {
+                        if (record.isComplete) SurveyStatus.COMPLETE else SurveyStatus.PARTIAL
+                    }
+
+                    if (existingIndex >= 0) {
+                        val existing = currentSurveys[existingIndex]
+                        currentSurveys[existingIndex] = existing.copy(
+                            isCompleted = record.isComplete,
+                            status = status,
+                            questionCount = record.totalQuestions
+                        )
+                        rememberProgress(record.surveyId, record.isComplete, status, record.totalQuestions)
+                    } else {
+                        rememberProgress(record.surveyId, record.isComplete, status, record.totalQuestions)
+                        currentSurveys.add(
+                            Survey(
+                                id = record.surveyId,
+                                title = record.surveyTitle,
+                                description = record.surveyDescription,
+                                latitude = 0.0,
+                                longitude = 0.0,
+                                points = 0,
+                                isCompleted = record.isComplete,
+                                status = status,
+                                questionCount = record.totalQuestions
+                            )
+                        )
+                    }
+                }
+                surveysFlow.value = currentSurveys
+                true
+            } else {
+                Log.w(TAG, "Failed to fetch survey history: ${response.msg}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching survey history", e)
+            false
+        }
+    }
+
     companion object {
         private const val TAG = "ApiSurveyRepository"
+        private val HISTORY_SYNC_WINDOW_MS = TimeUnit.MINUTES.toMillis(5)
     }
 }
+
+private data class SurveyProgressSnapshot(
+    val isCompleted: Boolean,
+    val status: SurveyStatus,
+    val questionCount: Int
+)
+
+private fun Survey.toProgressSnapshot(): SurveyProgressSnapshot =
+    SurveyProgressSnapshot(isCompleted = isCompleted, status = status, questionCount = questionCount)

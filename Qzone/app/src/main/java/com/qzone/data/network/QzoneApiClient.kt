@@ -1,5 +1,6 @@
 package com.qzone.data.network
 
+import android.util.Log
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit
 object QzoneApiClient {
 
     private const val BASE_URL = "http://52.14.58.34:8082/"
+    private const val TAG = "QzoneApiClient"
 
     private val moshi: Moshi by lazy {
         Moshi.Builder()
@@ -39,6 +41,13 @@ object QzoneApiClient {
                     original
                 }
                 chain.proceed(request)
+            }
+            .addInterceptor { chain ->
+                val response = chain.proceed(chain.request())
+                if (response.code == 401) {
+                    Log.w(TAG, "Received HTTP 401 for ${response.request.url.encodedPath}; token may be missing or expired")
+                }
+                response
             }
             .addInterceptor(logging)
             .connectTimeout(15, TimeUnit.SECONDS)

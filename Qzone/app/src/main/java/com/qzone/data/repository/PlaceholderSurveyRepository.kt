@@ -72,6 +72,11 @@ class PlaceholderSurveyRepository : SurveyRepository {
         delay(200)
     }
 
+    override suspend fun clearCachedSurveys() {
+        completedIds.clear()
+        surveysFlow.value = applyCompletion(PlaceholderDataSource.sampleSurveys())
+    }
+
     private fun applyCompletion(source: List<Survey>): List<Survey> {
         if (completedIds.isEmpty()) return source
         return source.map { survey ->

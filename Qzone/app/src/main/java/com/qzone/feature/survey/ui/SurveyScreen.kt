@@ -1,5 +1,6 @@
 package com.qzone.feature.survey.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -80,6 +81,9 @@ fun SurveyScreen(
     }
 
     val topInsets = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    BackHandler(enabled = !uiState.isComplete) {
+        onClose()
+    }
 
     if (uiState.isComplete) {
         SurveyCompletionDialog(
@@ -149,6 +153,16 @@ fun SurveyScreen(
                     )
                 }
             }
+        }
+
+        uiState.validationError?.let { validationMessage ->
+            Text(
+                text = validationMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
         }
 
         Row(

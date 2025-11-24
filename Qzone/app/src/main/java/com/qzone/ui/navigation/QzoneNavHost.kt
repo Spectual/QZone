@@ -53,7 +53,12 @@ fun QzoneNavHost(
     ) {
         composable(QzoneDestination.SignIn.route) {
             val context = LocalContext.current
-            val authViewModel: AuthViewModel = viewModel(factory = AuthViewModel.factory(appState.userRepository))
+            val authViewModel: AuthViewModel = viewModel(
+                factory = AuthViewModel.factory(
+                    appState.userRepository,
+                    appState.surveyRepository
+                )
+            )
             val googleSignInClient = remember(context) {
                 val options = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
                     com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
@@ -124,7 +129,12 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.Register.route) {
-            val authViewModel: AuthViewModel = viewModel(factory = AuthViewModel.factory(appState.userRepository))
+            val authViewModel: AuthViewModel = viewModel(
+                factory = AuthViewModel.factory(
+                    appState.userRepository,
+                    appState.surveyRepository
+                )
+            )
             RegisterScreen(
                 state = authViewModel.registerState,
                 onUsernameChanged = authViewModel::onRegisterUsernameChanged,
@@ -175,7 +185,11 @@ fun QzoneNavHost(
                 state = surveyViewModel.uiState,
                 onPrevious = surveyViewModel::onPrevious,
                 onNext = surveyViewModel::onNext,
-                onClose = { navController.popBackStack() },
+                onClose = {
+                    surveyViewModel.cacheProgress {
+                        navController.popBackStack()
+                    }
+                },
                 onSubmit = { surveyViewModel.submit() },
                 onCompletionAcknowledged = { navController.popBackStack() },
                 onAnswerChanged = surveyViewModel::onAnswerChanged

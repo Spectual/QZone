@@ -36,6 +36,7 @@ data class Survey(
 
 enum class SurveyStatus {
     EMPTY,
+    IN_PROGRESS,
     PARTIAL,
     COMPLETE
 }

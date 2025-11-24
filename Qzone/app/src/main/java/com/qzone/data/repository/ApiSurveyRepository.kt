@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
 
 import com.qzone.data.model.SurveyStatus
 import com.qzone.data.network.model.UserSurveyHistoryRequest
+import com.qzone.data.network.model.UserSurveyRecord
 import java.util.concurrent.TimeUnit
 import retrofit2.HttpException
 
@@ -227,11 +228,7 @@ class ApiSurveyRepository : SurveyRepository {
 
                 historyRecords.forEach { record ->
                     val existingIndex = currentSurveys.indexOfFirst { it.id == record.surveyId }
-                    val status = try {
-                        SurveyStatus.valueOf(record.status)
-                    } catch (e: Exception) {
-                        if (record.isComplete) SurveyStatus.COMPLETE else SurveyStatus.PARTIAL
-                    }
+                    val status = mapStatus(record)
 
                     if (existingIndex >= 0) {
                         val existing = currentSurveys[existingIndex]
@@ -273,6 +270,23 @@ class ApiSurveyRepository : SurveyRepository {
     companion object {
         private const val TAG = "ApiSurveyRepository"
         private val HISTORY_SYNC_WINDOW_MS = TimeUnit.MINUTES.toMillis(5)
+    }
+}
+
+private fun mapStatus(record: UserSurveyRecord): SurveyStatus {
+    val normalized = record.status
+        ?.replace("-", "", ignoreCase = true)
+        ?.replace("_", "", ignoreCase = true)
+        ?.uppercase()
+        .orEmpty()
+    return when {
+        normalized == "INPROGRESS" || normalized == "INGROGRESS" -> SurveyStatus.IN_PROGRESS
+        normalized == "COMPLETE" || normalized == "COMPLETED" -> SurveyStatus.COMPLETE
+        normalized == "PARTIAL" -> SurveyStatus.PARTIAL
+        normalized == "EMPTY" -> SurveyStatus.EMPTY
+        record.isComplete -> SurveyStatus.COMPLETE
+        record.answeredQuestions > 0 -> SurveyStatus.IN_PROGRESS
+        else -> SurveyStatus.EMPTY
     }
 }
 

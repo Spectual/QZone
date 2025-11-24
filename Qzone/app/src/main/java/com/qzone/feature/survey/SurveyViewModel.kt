@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import android.util.Log
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
+import com.qzone.data.model.SurveyStatus
 import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
@@ -23,7 +24,8 @@ data class SurveyUiState(
     val currentQuestionIndex: Int = 0,
     val answers: Map<String, List<String>> = emptyMap(),
     val isSubmitting: Boolean = false,
-    val isComplete: Boolean = false
+    val isComplete: Boolean = false,
+    val validationError: String? = null
 ) {
     val currentQuestion: SurveyQuestion?
         get() = survey?.questions?.getOrNull(currentQuestionIndex)
@@ -77,7 +79,7 @@ class SurveyViewModel(
                 }
                 else -> state.answers + (questionId to listOf(value))
             }
-            state.copy(answers = updatedAnswers)
+            state.copy(answers = updatedAnswers, validationError = null)
         }
     }
 
@@ -94,45 +96,19 @@ class SurveyViewModel(
 
     fun submit() {
         viewModelScope.launch {
-            val survey = _uiState.value.survey ?: return@launch
-            _uiState.update { it.copy(isSubmitting = true) }
-            // Build request body from answers
-            val answersMap = _uiState.value.answers
-            val items = survey.questions.map { q ->
-                val selectedValues = answersMap[q.id].orEmpty()
-                val qType = q.type.lowercase()
-                when (qType) {
-                    "text" -> {
-                        SubmitAnswerItem(
-                            questionId = q.id,
-                            selected = null,
-                            content = selectedValues.firstOrNull()
-                        )
-                    }
-                    "multiple" -> {
-                        // Map selected option contents to their labels (e.g., A, B)
-                        val labels = selectedValues.mapNotNull { ans ->
-                            q.options?.firstOrNull { it.content == ans }?.label ?: ans
-                        }
-                        SubmitAnswerItem(
-                            questionId = q.id,
-                            selected = labels.joinToString(",").ifBlank { null },
-                            content = null
-                        )
-                    }
-                    else -> {
-                        // single choice or other types
-                        val label = selectedValues.firstOrNull()?.let { ans ->
-                            q.options?.firstOrNull { it.content == ans }?.label ?: ans
-                        }
-                        SubmitAnswerItem(
-                            questionId = q.id,
-                            selected = label,
-                            content = null
-                        )
-                    }
-                }
+            val currentState = _uiState.value
+            val survey = currentState.survey ?: return@launch
+            val answersMap = currentState.answers
+            val hasIncompleteRequired = survey.questions.any { question ->
+                question.required && !question.isAnswered(answersMap[question.id])
             }
+            if (hasIncompleteRequired) {
+                _uiState.update { it.copy(validationError = REQUIRED_QUESTION_ERROR) }
+                return@launch
+            }
+            _uiState.update { it.copy(isSubmitting = true, validationError = null) }
+            // Build request body from answers
+            val items = buildSubmitItems(survey, answersMap)
             Log.d(TAG, "Submitting answers: surveyId=" + surveyId + ", items=" + items.size)
             Log.d(TAG, "Submit payload JSON: ${items.toDebugJson()}")
             val response = try {
@@ -146,15 +122,98 @@ class SurveyViewModel(
             if (response.success) {
                 repository.markSurveyCompleted(surveyId)
                 userRepository.recordSurveyCompletion(survey)
-                _uiState.update { it.copy(isSubmitting = false, isComplete = true) }
+                _uiState.update { it.copy(isSubmitting = false, isComplete = true, validationError = null) }
             } else {
                 _uiState.update { it.copy(isSubmitting = false) }
             }
         }
     }
 
+    fun cacheProgress(onFinished: (() -> Unit)? = null) {
+        val currentState = _uiState.value
+        val survey = currentState.survey
+        if (survey == null) {
+            onFinished?.invoke()
+            return
+        }
+        val answersMap = currentState.answers
+        if (answersMap.isEmpty()) {
+            onFinished?.invoke()
+            return
+        }
+        viewModelScope.launch {
+            val items = buildSubmitItems(survey, answersMap)
+            Log.d(TAG, "Caching survey progress: surveyId=" + surveyId + ", items=" + items.size)
+            try {
+                val response = QzoneApiClient.service.submitResponses(items)
+                if (response.success) {
+                    val questionCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
+                    val updated = survey.copy(
+                        answers = answersMap,
+                        status = SurveyStatus.IN_PROGRESS,
+                        isCompleted = false,
+                        questionCount = questionCount
+                    )
+                    try {
+                        repository.saveSurveyProgress(updated)
+                    } catch (cacheError: Throwable) {
+                        Log.w(TAG, "Failed to update local survey progress cache", cacheError)
+                    }
+                } else {
+                    Log.w(TAG, "Cache progress API failed: ${response.msg}")
+                }
+            } catch (t: Throwable) {
+                Log.w(TAG, "Failed to cache survey progress", t)
+            } finally {
+                onFinished?.invoke()
+            }
+        }
+    }
+
+    private fun buildSubmitItems(
+        survey: Survey,
+        answersMap: Map<String, List<String>>
+    ): List<SubmitAnswerItem> {
+        return survey.questions.map { q ->
+            val selectedValues = answersMap[q.id].orEmpty()
+            val qType = q.type.lowercase()
+            when (qType) {
+                "text" -> {
+                    SubmitAnswerItem(
+                        questionId = q.id,
+                        selected = null,
+                        content = selectedValues.firstOrNull()
+                    )
+                }
+                "multiple" -> {
+                    // Map selected option contents to their labels (e.g., A, B)
+                    val labels = selectedValues.mapNotNull { ans ->
+                        q.options?.firstOrNull { it.content == ans }?.label ?: ans
+                    }
+                    SubmitAnswerItem(
+                        questionId = q.id,
+                        selected = labels.joinToString(",").ifBlank { null },
+                        content = null
+                    )
+                }
+                else -> {
+                    // single choice or other types
+                    val label = selectedValues.firstOrNull()?.let { ans ->
+                        q.options?.firstOrNull { it.content == ans }?.label ?: ans
+                    }
+                    SubmitAnswerItem(
+                        questionId = q.id,
+                        selected = label,
+                        content = null
+                    )
+                }
+            }
+        }
+    }
+
     companion object {
         private const val TAG = "SurveyViewModel"
+        private const val REQUIRED_QUESTION_ERROR = "Please complete all required questions."
         fun factory(
             repository: SurveyRepository,
             userRepository: UserRepository,
@@ -176,5 +235,13 @@ private fun List<SubmitAnswerItem>.toDebugJson(): String {
         val contentEscaped = item.content?.replace("\"", "\\\"")
         val contentPart = contentEscaped?.let { "\"$it\"" } ?: "null"
         "{\"questionId\":\"${item.questionId}\",\"selected\":$selectedPart,\"content\":$contentPart}"
+    }
+}
+
+private fun SurveyQuestion.isAnswered(selectedValues: List<String>?): Boolean {
+    val answers = selectedValues.orEmpty()
+    return when (type.lowercase()) {
+        "text" -> answers.firstOrNull()?.isNullOrBlank() == false
+        else -> answers.any { it.isNotBlank() }
     }
 }

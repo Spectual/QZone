@@ -38,7 +38,7 @@ class HistoryViewModel(
             ) { completed, uncompleted ->
                 // Treat both EMPTY (never started) and PARTIAL as "in progress"
                 val actualInProgress = uncompleted.filter { 
-                    it.status == SurveyStatus.PARTIAL || it.status == SurveyStatus.EMPTY 
+                    it.status == SurveyStatus.IN_PROGRESS || it.status == SurveyStatus.PARTIAL
                 }
                 completed to actualInProgress
             }.collect { (completed, inProgress) ->

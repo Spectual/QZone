@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import android.util.Log
 import com.qzone.data.model.AuthResult
 import com.qzone.domain.repository.UserRepository
+import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,7 +29,10 @@ data class RegisterUiState(
     val registrationComplete: Boolean = false
 )
 
-class AuthViewModel(private val repository: UserRepository) : ViewModel() {
+class AuthViewModel(
+    private val userRepository: UserRepository,
+    private val surveyRepository: SurveyRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -64,8 +68,9 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Please enter email and password") }
                 return@launch
             }
-            val result: AuthResult = repository.signIn(state.email, state.password)
+            val result: AuthResult = userRepository.signIn(state.email, state.password)
             if (result.success) {
+                refreshUserResponses()
                 onSuccess()
                 _uiState.update { it.copy(isLoading = false) }
             } else {
@@ -78,9 +83,10 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
         Log.d("AuthViewModel", "signInWithGoogle called with token length: ${idToken.length}")
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = repository.signInWithGoogle(idToken)
+            val result = userRepository.signInWithGoogle(idToken)
             Log.d("AuthViewModel", "signInWithGoogle result: success=${result.success}, error=${result.errorMessage}")
             if (result.success) {
+                refreshUserResponses()
                 onSuccess()
                 _uiState.update { it.copy(isLoading = false) }
             } else {
@@ -103,8 +109,9 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
                 }
                 return@launch
             }
-            val result = repository.register(state.username, state.email, state.password)
+            val result = userRepository.register(state.username, state.email, state.password)
             if (result.success) {
+                refreshUserResponses()
                 _registerState.update { it.copy(isLoading = false, registrationComplete = true) }
                 onSuccess()
             } else {
@@ -113,11 +120,19 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
         }
     }
 
+    private suspend fun refreshUserResponses() {
+        runCatching { surveyRepository.refreshSurveyHistory() }
+            .onFailure { throwable -> Log.w("AuthViewModel", "Failed to sync survey history after login", throwable) }
+    }
+
     companion object {
-        fun factory(repository: UserRepository): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        fun factory(
+            userRepository: UserRepository,
+            surveyRepository: SurveyRepository
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return AuthViewModel(repository) as T
+                return AuthViewModel(userRepository, surveyRepository) as T
             }
         }
     }

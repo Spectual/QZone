@@ -248,6 +248,22 @@ class FirebaseUserRepository(
                 Log.w(TAG, "Avatar update API failed: ${avatarResponse.msg}")
                 return@withContext false
             }
+
+            // Update Firebase Auth profile as well to ensure consistency
+            try {
+                val firebaseUser = auth.currentUser
+                if (firebaseUser != null) {
+                    val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                        .setPhotoUri(android.net.Uri.parse(uploadInfo.publicUrl))
+                        .build()
+                    firebaseUser.updateProfile(profileUpdates).await()
+                    Log.d(TAG, "Updated Firebase Auth photo URL")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to update Firebase Auth photo URL", e)
+                // Continue as backend update was successful
+            }
+
             val current = _currentUser.value
             val localPath = UserLocalStorage.saveAvatarLocal(imageBytes, filename)
             val avatarUri = localPath?.let { File(it).toURI().toString() } ?: uploadInfo.publicUrl
@@ -375,7 +391,18 @@ class FirebaseUserRepository(
             Log.w(TAG, "User profile API failed: ${response.msg}")
             return false
         }
-        val profile = response.data
+        var profile = response.data!!
+        
+        // Fallback to Firebase Auth photo URL if backend returns empty
+        if (profile.avatarUrl.isNullOrBlank()) {
+            auth.currentUser?.photoUrl?.toString()?.let { firebasePhoto ->
+                if (firebasePhoto.isNotBlank()) {
+                    Log.d(TAG, "Using Firebase Auth photo URL as fallback")
+                    profile = profile.copy(avatarUrl = firebasePhoto)
+                }
+            }
+        }
+
         UserLocalStorage.save(profile)
         val localPath = UserLocalStorage.getAvatarLocalPath()
         _currentUser.emit(profile.toUserProfile(_currentUser.value, localPath))

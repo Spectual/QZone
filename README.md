@@ -23,26 +23,45 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 
 ---
 
-## MVP Features
-* **Onboarding & Authentication:** Effortless user registration and login, including third-party support for Google, Meta, and X to minimize friction.
-* **Location-Based Survey Feed:** Use the device's GPS to fetch and display a list of surveys relevant to the user's current area. This is the central feature of our app.
+## Features
 
-* **Reward & Points System:** Users earn a base number of points for every completed survey, with the potential for bonus points set by the survey creator.
+### Onboarding & Authentication
+- Supports email/password sign-up and login using Firebase Auth.
+- Google Sign-In is integrated and follows the same authentication flow.
+- All authenticated requests use refreshed access tokens from Firebase.
 
-* **Multimedia Survey Interface:** A native, intuitive interface for answering various question types, with support for embedded text, images, audio, and video content.
+### Location-Based Survey Feed
+- Uses the device’s GPS to request nearby surveys from the `/api/location/nearby` endpoint.
+- Show whether a survey is partially completed or fully completed in different sections.
+- Users can shake the phone (via Accelerometer detection) to refresh the feed quickly.
 
-* **User Profile Management:** A section for users to manage basic information, such as their profile picture, region, and personal interests.
+### Rewards & Points
+- Completing a survey adds reward points to the user’s account.
+- The rewards screen lets users redeem points for available coupons.
 
-* **Modern & Personalized UI/UX:** Built with a focus on beauty and usability, ensuring a branded, consistent design.
+### User Profile
+- The profile page displays rank, point balance, redemption wallet, and recent activity.
+- Users can upload an avatar, which is stored remotely and cached locally for offline use.
 
-**Stretch (if time allows)**: Map explore, profile-based matching, **shake-to-refresh** (gyroscope), in-app redemption placeholder, color-blind friendly theme.
+### UI / UX
+- Built with Jetpack Compose for consistent styling and layout across all screens.
+- Includes simple animations and supports light/dark mode automatically.
+- Uses clean layouts and readable typography to make the app easy to use.
+
+## Testing Strategy
+
+- **Manual smoke testing (emulator + physical devices)**  
+  Every feature branch is exercised end-to-end on a Pixel 7 emulator and a physical realmeGT neo android 11: sign-in/register flows, GPS permission prompts, shake-to-refresh, survey answering, reward redemption stubs, and profile editing. We rely on verbose Logcat + in-app snackbars to verify success paths and failure fallbacks.
+
+- **Sensor & location sanity checks**  
+  For features tied to hardware, we toggle GPS on/off and simulate accelerometer input (via the Android Studio “Virtual Sensors” panel) to confirm graceful degradation: feed refresh falls back to cached surveys when GPS is unavailable, and the shake detector respects its cooldown/threshold so it does not spam refreshes.
 
 ---
 
 ## Tech Stack
-- **External APIs:** Google Identity Services, Firebase Authentication / Firestore, Google Maps SDK for Android.
-- **Onboard Sensors:** GPS / Network Location (additional sensors such as camera/microphone planned).
-- **Data Storage:** Proto DataStore, Firebase Firestore, in-memory placeholders for interim demo.
+- **External APIs:** Google Identity Services, Firebase Authentication / Firestore, Google Maps SDK for Android, Our own backend in API_DOCUMENTATION.
+- **Onboard Sensors:** GPS / Network Location, Accelerometer
+- **Data Storage:** Proto DataStore, Firebase Firestore.
 
 
 ---
@@ -103,9 +122,3 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 - **Backend**
   - Since the proposal the Java backend now exposes login, register, survey CRUD, and “get nearby surveys” endpoints.
   - Mobile app already consumes `/api/user/login`, `/api/user/register`, and `/api/survey/submit`; feed currently uses mock data but the Retrofit client is ready to swap in the live `nearby` endpoint.
-  
----
-
-## UI Overview
-
-![overview](./imgs/overview.png)

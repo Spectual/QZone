@@ -7,6 +7,7 @@ import com.qzone.data.model.LocationResult
 import com.qzone.data.model.NearbyLocation
 import com.qzone.data.model.Survey
 import com.qzone.data.model.UserLocation
+import com.qzone.data.network.AuthTokenProvider
 import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.SurveyRepository
@@ -110,26 +111,40 @@ class FeedViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, locationError = null) }
 
+            if (!hasValidSession()) {
+                _uiState.update { it.copy(isRefreshing = false) }
+                return@launch
+            }
+
             // Get current location
             when (val result = locationRepository.getCurrentLocation()) {
                 is LocationResult.Success -> {
                     val success = result as LocationResult.Success
                     _uiState.update { it.copy(currentLocation = success.location) }
-                    surveyRepository.refreshNearby(success.location, radiusMeters = 5000)
+                    try {
+                        surveyRepository.refreshNearby(success.location, radiusMeters = 5000)
+                        refreshHistorySnapshot()
+                    } catch (t: Throwable) {
+                        Log.e(TAG, "Failed to refresh nearby surveys", t)
+                        _uiState.update { it.copy(locationError = t.message ?: "刷新附近问卷失败") }
+                    }
                     loadNearbyLocationsWithCoordinates(success.location.latitude, success.location.longitude)
                 }
                 is LocationResult.PermissionDenied -> {
                     _uiState.update { it.copy(locationError = "Location permission denied") }
                     surveyRepository.refreshNearby(null)
+                    refreshHistorySnapshot()
                 }
                 is LocationResult.LocationDisabled -> {
                     _uiState.update { it.copy(locationError = "Please enable location services") }
                     surveyRepository.refreshNearby(null)
+                    refreshHistorySnapshot()
                 }
                 is LocationResult.Error -> {
                     val error = result as LocationResult.Error
                     _uiState.update { it.copy(locationError = error.message) }
                     surveyRepository.refreshNearby(null)
+                    refreshHistorySnapshot()
                 }
             }
             
@@ -154,6 +169,9 @@ class FeedViewModel(
 
     private fun loadNearbyLocationsWithCoordinates(latitude: Double, longitude: Double) {
         viewModelScope.launch {
+            if (!hasValidSession()) {
+                return@launch
+            }
             _uiState.update { it.copy(isLoadingNearby = true, nearbyError = null) }
             try {
                 val radiusKm = 5.0
@@ -197,6 +215,24 @@ class FeedViewModel(
                 }
             }
         }
+    }
+
+    private fun hasValidSession(): Boolean {
+        val tokenPresent = !AuthTokenProvider.accessToken.isNullOrBlank()
+        if (!tokenPresent) {
+            _uiState.update { state ->
+                state.copy(
+                    locationError = "请登录后再尝试加载附近问卷",
+                    nearbyError = state.nearbyError ?: "请登录后再尝试加载附近问卷"
+                )
+            }
+        }
+        return tokenPresent
+    }
+
+    private suspend fun refreshHistorySnapshot() {
+        runCatching { surveyRepository.refreshSurveyHistory() }
+            .onFailure { Log.w(TAG, "Failed to refresh survey history", it) }
     }
 
     fun refresh() {

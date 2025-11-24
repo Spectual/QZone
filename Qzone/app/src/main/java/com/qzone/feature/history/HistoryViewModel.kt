@@ -36,8 +36,10 @@ class HistoryViewModel(
                 surveyRepository.getCompletedSurveys(),
                 surveyRepository.getUncompletedSurveys()
             ) { completed, uncompleted ->
-                // Filter uncompleted surveys to only include those with PARTIAL status
-                val actualInProgress = uncompleted.filter { it.status == SurveyStatus.PARTIAL }
+                // Treat both EMPTY (never started) and PARTIAL as "in progress"
+                val actualInProgress = uncompleted.filter { 
+                    it.status == SurveyStatus.PARTIAL || it.status == SurveyStatus.EMPTY 
+                }
                 completed to actualInProgress
             }.collect { (completed, inProgress) ->
                 _uiState.update {

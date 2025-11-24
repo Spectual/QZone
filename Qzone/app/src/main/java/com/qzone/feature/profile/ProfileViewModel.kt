@@ -7,6 +7,7 @@ import com.qzone.data.model.EditableProfile
 import com.qzone.data.model.UserProfile
 import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.domain.repository.RewardRepository
+import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +43,8 @@ data class EditProfileUiState(
 class ProfileViewModel(
     private val userRepository: UserRepository,
     private val rewardRepository: RewardRepository,
-    private val localSurveyRepository: LocalSurveyRepository
+    private val localSurveyRepository: LocalSurveyRepository,
+    private val surveyRepository: SurveyRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -123,6 +125,7 @@ class ProfileViewModel(
             userRepository.signOut()
             // Delete all local survey data when user signs out
             localSurveyRepository.deleteAllSurveys()
+            surveyRepository.clearCachedSurveys()
             onSignedOut()
         }
     }
@@ -148,12 +151,13 @@ class ProfileViewModel(
         fun factory(
             userRepository: UserRepository,
             rewardRepository: RewardRepository,
-            localSurveyRepository: LocalSurveyRepository
+            localSurveyRepository: LocalSurveyRepository,
+            surveyRepository: SurveyRepository
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ProfileViewModel(userRepository, rewardRepository, localSurveyRepository) as T
+                    return ProfileViewModel(userRepository, rewardRepository, localSurveyRepository, surveyRepository) as T
                 }
             }
     }

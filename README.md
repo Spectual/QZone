@@ -5,11 +5,17 @@
 ---
 
 ## Team
-\- **Yifei Bao** — Product & UX; user onboarding/auth; profile & basic recommendation design
+#### Xuetong Fu – Backend / API
+- Designed and documented the Java API (auth, survey CRUD, response history, rewards).
+- Implemented Firebase token exchange, login/register logic, and unified local storage using Room.
 
-\- **Xuetong Fu** — Survey engine & data; questionnaire flow; storage & submission
+#### Yifei Bao – Survey & Rewards
+- Built the survey flow (Feed → Detail → Submit), question UI, answer saving, and shake-to-refresh.
+- Implemented rewards flow: points updates, catalog UI, wallet view, and basic redemption logic.
 
-\- **Zhenyang Qian** — Location & geofencing; rewards/points; platform integrations
+#### Zhenyang Qian – UI/UX & Account
+- Created the Compose design system (theme, typography, card components) and overall UI polish.
+- Implemented history filters, profile editing and avatar upload, dark mode, and navigation structure.
 
 > As a collaborative team of three, we will share all design and architecture decisions. To ensure progress, we have assigned primary focus areas, but we will all contribute to the entire codebase through pair programming and code reviews.
 

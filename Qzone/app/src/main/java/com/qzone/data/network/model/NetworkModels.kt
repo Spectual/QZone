@@ -42,6 +42,17 @@ data class SubmitAnswerItem(
     val content: String?
 )
 
+data class SubmitResponseResult(
+    @Json(name = "responseId") val responseId: String? = null,
+    @Json(name = "surveyId") val surveyId: String? = null,
+    @Json(name = "status") val status: String? = null,
+    @Json(name = "isComplete") val isComplete: Boolean = false,
+    @Json(name = "answeredQuestions") val answeredQuestions: Int = 0,
+    @Json(name = "totalQuestions") val totalQuestions: Int = 0,
+    @Json(name = "completionRate") val completionRate: Double = 0.0,
+    @Json(name = "isFirstComplete") val isFirstComplete: Boolean = false
+)
+
 // Nearby location query body
 data class NearbyLocationRequest(
     @Json(name = "userLat") val userLat: Double,
@@ -128,7 +139,7 @@ data class NetworkSurveyOption(
 }
 
 data class NetworkUserProfile(
-    @Json(name = "documentId") val documentId: String,
+    @Json(name = "documentId") val documentId: String = "",
     @Json(name = "userName") val userName: String?,
     @Json(name = "email") val email: String?,
     @Json(name = "avatarUrl") val avatarUrl: String?,

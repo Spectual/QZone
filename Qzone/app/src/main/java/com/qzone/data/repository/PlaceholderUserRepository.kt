@@ -93,6 +93,12 @@ class PlaceholderUserRepository : UserRepository {
         userFlow.value = storedProfile
     }
 
+    override suspend fun refreshUserProfile(): Boolean {
+        delay(100)
+        userFlow.value = storedProfile
+        return true
+    }
+
     override suspend fun recordSurveyCompletion(survey: Survey) {
         delay(250)
         val formatter = SimpleDateFormat("MM/dd/yy", Locale.getDefault())

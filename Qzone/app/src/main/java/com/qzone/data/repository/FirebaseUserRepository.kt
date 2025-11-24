@@ -163,6 +163,10 @@ class FirebaseUserRepository(
         }
     }
 
+    override suspend fun refreshUserProfile(): Boolean {
+        return fetchAndCacheUserProfile()
+    }
+
     override suspend fun recordSurveyCompletion(survey: Survey) {
         val current = _currentUser.value
         val newHistory = SurveyHistoryItem(
@@ -391,8 +395,12 @@ class FirebaseUserRepository(
             Log.w(TAG, "User profile API failed: ${response.msg}")
             return false
         }
+        Log.d(
+            TAG,
+            "User profile API success: name=${response.data.userName}, points=${response.data.currentPoints}, rank=${response.data.rank}, pointsToNext=${response.data.pointsToNextRank}"
+        )
         var profile = response.data!!
-        
+
         // Fallback to Firebase Auth photo URL if backend returns empty
         if (profile.avatarUrl.isNullOrBlank()) {
             auth.currentUser?.photoUrl?.toString()?.let { firebasePhoto ->
@@ -401,6 +409,13 @@ class FirebaseUserRepository(
                     profile = profile.copy(avatarUrl = firebasePhoto)
                 }
             }
+        }
+        val resolvedId = profile.documentId.ifBlank {
+            auth.currentUser?.uid ?: _currentUser.value.id.ifBlank { DEFAULT_PROFILE.id }
+        }
+        if (profile.documentId != resolvedId) {
+            Log.w(TAG, "User profile missing documentId, using fallback id: $resolvedId")
+            profile = profile.copy(documentId = resolvedId)
         }
 
         UserLocalStorage.save(profile)
@@ -416,8 +431,9 @@ class FirebaseUserRepository(
             val file = File(path)
             if (file.exists()) file.toURI().toString() else null
         }
+        val resolvedId = documentId.ifBlank { existing?.id?.takeIf { it.isNotBlank() } ?: fallback.id }
         return fallback.copy(
-            id = documentId,
+            id = resolvedId,
             displayName = userName ?: fallback.displayName,
             email = email ?: fallback.email,
             avatarUrl = avatarFromLocal ?: avatarUrl ?: fallback.avatarUrl,

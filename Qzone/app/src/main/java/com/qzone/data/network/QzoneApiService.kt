@@ -7,6 +7,7 @@ import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
 import com.qzone.data.network.model.RegisterRequest
 import com.qzone.data.network.model.SubmitAnswerItem
+import com.qzone.data.network.model.SubmitResponseResult
 import com.qzone.data.network.model.NetworkSurveyDetail
 import com.qzone.data.network.model.NetworkSurveyQuestion
 import com.qzone.data.network.model.NetworkSurveyOption
@@ -34,7 +35,7 @@ interface QzoneApiService {
     suspend fun register(@Body request: RegisterRequest): ApiResult<LoginResponse>
 
     @POST("/api/response/")
-    suspend fun submitResponses(@Body body: List<SubmitAnswerItem>): ApiResult<String>
+    suspend fun submitResponses(@Body body: List<SubmitAnswerItem>): ApiResult<SubmitResponseResult>
 
     @POST("/api/location/nearby")
     suspend fun getNearbyLocations(@Body body: NearbyLocationRequest): ApiResult<List<NearbyLocation>>

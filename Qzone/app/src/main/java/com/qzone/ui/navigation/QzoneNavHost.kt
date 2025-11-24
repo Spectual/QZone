@@ -191,7 +191,17 @@ fun QzoneNavHost(
                     }
                 },
                 onSubmit = { surveyViewModel.submit() },
-                onCompletionAcknowledged = { navController.popBackStack() },
+                onCompletionAcknowledged = {
+                    val popped = navController.popBackStack()
+                    if (!popped) {
+                        navController.navigate(QzoneDestination.Feed.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                },
                 onAnswerChanged = surveyViewModel::onAnswerChanged
             )
         }

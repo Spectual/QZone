@@ -70,6 +70,7 @@ class AuthViewModel(
             }
             val result: AuthResult = userRepository.signIn(state.email, state.password)
             if (result.success) {
+                refreshUserProfile()
                 refreshUserResponses()
                 onSuccess()
                 _uiState.update { it.copy(isLoading = false) }
@@ -86,6 +87,7 @@ class AuthViewModel(
             val result = userRepository.signInWithGoogle(idToken)
             Log.d("AuthViewModel", "signInWithGoogle result: success=${result.success}, error=${result.errorMessage}")
             if (result.success) {
+                refreshUserProfile()
                 refreshUserResponses()
                 onSuccess()
                 _uiState.update { it.copy(isLoading = false) }
@@ -111,6 +113,7 @@ class AuthViewModel(
             }
             val result = userRepository.register(state.username, state.email, state.password)
             if (result.success) {
+                refreshUserProfile()
                 refreshUserResponses()
                 _registerState.update { it.copy(isLoading = false, registrationComplete = true) }
                 onSuccess()
@@ -123,6 +126,11 @@ class AuthViewModel(
     private suspend fun refreshUserResponses() {
         runCatching { surveyRepository.refreshSurveyHistory() }
             .onFailure { throwable -> Log.w("AuthViewModel", "Failed to sync survey history after login", throwable) }
+    }
+
+    private suspend fun refreshUserProfile() {
+        runCatching { userRepository.refreshUserProfile() }
+            .onFailure { throwable -> Log.w("AuthViewModel", "Failed to refresh user profile after login", throwable) }
     }
 
     companion object {

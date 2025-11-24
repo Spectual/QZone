@@ -15,6 +15,7 @@ import com.qzone.data.network.model.SubmitAnswerItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -25,7 +26,8 @@ data class SurveyUiState(
     val answers: Map<String, List<String>> = emptyMap(),
     val isSubmitting: Boolean = false,
     val isComplete: Boolean = false,
-    val validationError: String? = null
+    val validationError: String? = null,
+    val earnedPoints: Int? = null
 ) {
     val currentQuestion: SurveyQuestion?
         get() = survey?.questions?.getOrNull(currentQuestionIndex)
@@ -47,8 +49,14 @@ class SurveyViewModel(
 
     private val _uiState = MutableStateFlow(SurveyUiState())
     val uiState: StateFlow<SurveyUiState> = _uiState.asStateFlow()
+    private var lastKnownUserPoints: Int = 0
 
     init {
+        viewModelScope.launch {
+            userRepository.currentUser.collect { profile ->
+                lastKnownUserPoints = profile.totalPoints
+            }
+        }
         viewModelScope.launch {
             val survey = repository.getSurveyById(surveyId)
             _uiState.update { it.copy(survey = survey) }
@@ -122,7 +130,15 @@ class SurveyViewModel(
             if (response.success) {
                 repository.markSurveyCompleted(surveyId)
                 userRepository.recordSurveyCompletion(survey)
-                _uiState.update { it.copy(isSubmitting = false, isComplete = true, validationError = null) }
+                val earnedPoints = refreshUserPoints()
+                _uiState.update {
+                    it.copy(
+                        isSubmitting = false,
+                        isComplete = true,
+                        validationError = null,
+                        earnedPoints = earnedPoints ?: survey.points
+                    )
+                }
             } else {
                 _uiState.update { it.copy(isSubmitting = false) }
             }
@@ -209,6 +225,28 @@ class SurveyViewModel(
                 }
             }
         }
+    }
+
+    private suspend fun refreshUserPoints(): Int? {
+        val previousPoints = lastKnownUserPoints
+        return runCatching { QzoneApiClient.service.getCurrentUserProfile() }
+            .onFailure { throwable ->
+                Log.w(TAG, "Unable to refresh user points after survey completion", throwable)
+            }
+            .getOrNull()
+            ?.let { result ->
+                if (result.success && result.data != null) {
+                    val newPoints = result.data.currentPoints
+                    val delta = (newPoints - previousPoints).coerceAtLeast(0)
+                    lastKnownUserPoints = newPoints
+                    runCatching { userRepository.updatePoints(newPoints) }
+                        .onFailure { Log.w(TAG, "Failed to update local user points cache", it) }
+                    delta
+                } else {
+                    Log.w(TAG, "User profile fetch failed while refreshing points: ${result.msg}")
+                    null
+                }
+            }
     }
 
     companion object {

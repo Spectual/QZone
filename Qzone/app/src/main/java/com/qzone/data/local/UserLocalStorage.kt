@@ -38,8 +38,9 @@ object UserLocalStorage {
     }
 
     fun save(profile: NetworkUserProfile) {
+        val id = profile.documentId.takeIf { it.isNotBlank() } ?: return
         val editor = prefs()?.edit() ?: return
-        editor.putString(KEY_ID, profile.documentId)
+        editor.putString(KEY_ID, id)
         editor.putString(KEY_NAME, profile.userName)
         editor.putString(KEY_EMAIL, profile.email)
         editor.putString(KEY_AVATAR, profile.avatarUrl)

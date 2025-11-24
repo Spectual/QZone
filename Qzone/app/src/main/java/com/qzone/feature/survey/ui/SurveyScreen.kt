@@ -87,7 +87,7 @@ fun SurveyScreen(
 
     if (uiState.isComplete) {
         SurveyCompletionDialog(
-            points = survey?.points ?: 0,
+            points = uiState.earnedPoints ?: survey?.points ?: 0,
             onDismiss = onCompletionAcknowledged
         )
     }

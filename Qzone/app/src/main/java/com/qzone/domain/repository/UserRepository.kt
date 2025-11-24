@@ -12,6 +12,7 @@ interface UserRepository {
     suspend fun register(username: String, email: String, password: String): AuthResult
     suspend fun signInWithGoogle(idToken: String): AuthResult
     suspend fun updateProfile(edit: EditableProfile)
+    suspend fun refreshUserProfile(): Boolean
     suspend fun recordSurveyCompletion(survey: Survey)
     suspend fun deductPoints(amount: Int)
     suspend fun updatePoints(totalPoints: Int)

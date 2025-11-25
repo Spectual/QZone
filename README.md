@@ -128,3 +128,10 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 - **Backend**
   - Since the proposal the Java backend now exposes login, register, survey CRUD, and “get nearby surveys” endpoints.
   - Mobile app already consumes `/api/user/login`, `/api/user/register`, and `/api/survey/submit`; feed currently uses mock data but the Retrofit client is ready to swap in the live `nearby` endpoint.
+
+---
+
+## AI Usage Statement
+- **Tools & prompts** — Leveraged OpenAI GPT-5.1 chiefly to diagnose bugs, reason about code structure, and speed up codebase comprehension. Typical prompts: “Why is `SurveyViewModel.submit()` failing when network is offline?”, “Propose a cleaner wiring for AppContainer dependencies,” or “Walk through the Feed → Survey navigation flow so I can refactor safely.”
+- **Helpfulness vs. limits** — The assistant sped up documentation wording and cross-file tracing (e.g., locating all repositories and ViewModels). It cannot run the app/device, so runtime validation, sensor behavior, and Firebase setup still required manual testing. Sometimes it over-engineered fixes (adding unnecessary abstractions) which would have introduced bugs, so we pruned those suggestions and kept implementations minimal.
+- **Corrections & understanding** — We treated AI output as drafts: cross-referenced APIs/paths in the repo, re-ran affected flows (e.g., Feed → Survey submission) to confirm behavior, and rewrote sections when the assistant skipped nuances such as offline caching or token refresh.

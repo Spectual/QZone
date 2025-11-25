@@ -12,7 +12,7 @@ import com.qzone.data.network.model.NetworkSurveyDetail
 import com.qzone.data.network.model.NetworkSurveyQuestion
 import com.qzone.data.network.model.NetworkSurveyOption
 import com.qzone.data.network.model.NetworkUserProfile
-import com.qzone.data.network.model.PointsDeductRequest
+import com.qzone.data.network.model.RedeemCouponRequest
 import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.data.network.model.UploadUrlResponse
 import com.qzone.data.network.model.UpdateAvatarRequest
@@ -53,7 +53,7 @@ interface QzoneApiService {
     suspend fun getCurrentUserProfile(): ApiResult<NetworkUserProfile>
 
     @POST("/api/coupon/redeem")
-    suspend fun redeemCoupon(@Body request: PointsDeductRequest): ApiResult<Int>
+    suspend fun redeemCoupon(@Body request: RedeemCouponRequest): ApiResult<Int>
 
     @POST("/api/survey/upload-url")
     suspend fun getUploadUrl(@Body request: UploadUrlRequest): ApiResult<UploadUrlResponse>

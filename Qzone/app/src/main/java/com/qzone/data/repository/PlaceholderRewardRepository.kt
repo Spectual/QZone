@@ -3,7 +3,7 @@ package com.qzone.data.repository
 import android.util.Log
 import com.qzone.data.model.Reward
 import com.qzone.data.network.QzoneApiClient
-import com.qzone.data.network.model.PointsDeductRequest
+import com.qzone.data.network.model.RedeemCouponRequest
 import com.qzone.data.placeholder.PlaceholderDataSource
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.RewardRepository.InsufficientPointsException
@@ -27,7 +27,13 @@ class PlaceholderRewardRepository(
     override suspend fun redeemReward(reward: Reward): Boolean {
         return try {
             val response = runCatching {
-                apiService.redeemCoupon(PointsDeductRequest(requiredPoints = reward.pointsCost))
+                val couponName = reward.brandName.ifBlank { reward.description ?: reward.id }
+                apiService.redeemCoupon(
+                    RedeemCouponRequest(
+                        requiredPoints = reward.pointsCost,
+                        couponName = couponName
+                    )
+                )
             }.getOrElse { throwable ->
                 Log.e(TAG, "Redeem API call failed", throwable)
                 throw throwable

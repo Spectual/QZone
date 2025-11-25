@@ -109,7 +109,6 @@ fun ProfileScreen(
                         )
                     }
                     LoyaltyOverview(
-                        levelLabel = user.levelLabel,
                         currentPoints = user.totalPoints,
                         onWalletClick = onWalletClick
                     )
@@ -210,7 +209,6 @@ private fun Avatar(imageUrl: String?, onClick: () -> Unit) {
 
 @Composable
 private fun LoyaltyOverview(
-    levelLabel: String,
     currentPoints: Int,
     onWalletClick: () -> Unit
 ) {
@@ -219,11 +217,6 @@ private fun LoyaltyOverview(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = levelLabel,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary
-        )
         Text(
             text = "$currentPoints pts",
             style = MaterialTheme.typography.displayMedium,

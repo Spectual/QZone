@@ -150,8 +150,9 @@ data class NetworkUserProfile(
     @Json(name = "updateTime") val updateTime: String? = null
 )
 
-data class PointsDeductRequest(
-    @Json(name = "requiredPoints") val requiredPoints: Int
+data class RedeemCouponRequest(
+    @Json(name = "requiredPoints") val requiredPoints: Int,
+    @Json(name = "couponName") val couponName: String
 )
 
 data class UploadUrlRequest(

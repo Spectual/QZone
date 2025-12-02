@@ -54,13 +54,62 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 - Includes simple animations and supports light/dark mode automatically.
 - Uses clean layouts and readable typography to make the app easy to use.
 
-## Testing Strategy
+## Debugging & Testing Strategy
 
-- **Manual smoke testing (emulator + physical devices)**  
-  Every feature branch is exercised end-to-end on a Pixel 7 emulator and a physical realmeGT neo android 11: sign-in/register flows, GPS permission prompts, shake-to-refresh, survey answering, reward redemption stubs, and profile editing. We rely on verbose Logcat + in-app snackbars to verify success paths and failure fallbacks.
+### Debugging Strategy
 
-- **Sensor & location sanity checks**  
-  For features tied to hardware, we toggle GPS on/off and simulate accelerometer input (via the Android Studio “Virtual Sensors” panel) to confirm graceful degradation: feed refresh falls back to cached surveys when GPS is unavailable, and the shake detector respects its cooldown/threshold so it does not spam refreshes.
+We follow a **systematic debugging loop** instead of relying on `println` statements, which are unreliable in Compose's declarative UI and coroutine-based async flows.
+
+**1. Reproduce consistently** — Document exact steps to trigger the issue across devices/network states.
+
+**2. Localize the problem** — Use breakpoints and strategic logging (`QLog`) to narrow down the failure scope. Our `ApiCallLoggingInterceptor` tracks network requests, while ViewModels log state transitions and coroutine launches.
+
+**3. Generate hypothesis** — Ask targeted questions: Why is state invalid? Why did recomposition fire twice? Why is the list index out of bounds?
+
+**4. Test with debugger** — Use Android Studio's debugger to inspect variables, call stack, and coroutine dispatcher panels. `QLog` provides context, but the debugger reveals root causes.
+
+**5. Fix root cause** — Address the underlying data flow issue (e.g., why state became invalid) rather than adding defensive null checks everywhere.
+
+**6. Verify & prevent regression** — Re-run reproduction steps and consider adding unit/UI tests for critical paths.
+
+### Crash Logging
+
+Stack traces point to the exact line where crashes occur. We log:
+- **API calls** — Method, URL, status, latency via `ApiCallLoggingInterceptor`
+- **ViewModel state changes** — Flow emissions, loading/success/error transitions
+- **Navigation** — Route transitions logged in `QzoneNavHost`
+- **Coroutines** — Launch/completion/exception paths in async flows
+- **Sensors** — Location permission checks, GPS state, accelerometer thresholds
+
+We avoid logging sensitive data (passwords, tokens, PII) and keep payloads concise.
+
+### Logging & Diagnostics
+
+- **Central helper** — `util/QLog` gates verbose logs using the app’s `ApplicationInfo.FLAG_DEBUGGABLE` flag and lazy lambdas, so we can sprinkle diagnostics freely without impacting release APK size or CPU.
+- **API calls** — `ApiCallLoggingInterceptor` emits one-line entries for every Retrofit request (method, URL, status, latency) before OkHttp’s body logger runs, so we can correlate failures quickly.
+- **Database lookups** — `LocalSurveyRepository` now logs each Room insert/query/delete (including counts and IDs), giving us a clear audit trail for cache hits and migrations.
+- **Navigation & ViewModels** — `QzoneNavHost` plus `QzoneAppState.navigateTopLevel` log every route transition, and key ViewModels (auth, feed, survey, profile, history, rewards) log Flow emissions, coroutine launches, and terminal states (success/error) for easier triage.
+- **Sensors & permissions** — `LocationRepositoryImpl` reports permission checks, provider state, and raw/converted coordinates, while `ShakeDetector` logs acceleration thresholds/cooldowns so we know when shake-to-refresh fires.
+- **Async flows** — Feed/Profile/History/Rewards all log when their `Flow` collectors deliver data or when background refreshes (location, survey history, reward redemption) start/finish, giving visibility into coroutine scheduling.
+
+### Testing Strategy
+
+**Unit Tests (planned)** — Test ViewModels with fake repositories to verify:
+- Initial state correctness
+- Intent handlers (e.g., `submit()`, `onAnswerChanged()`)
+- StateFlow emissions and error handling
+- API failure fallbacks
+
+**Compose UI Tests (planned)** — Use `testTag` to locate nodes and test:
+- Login/register flows
+- Survey answering and submission
+- Rewards redemption
+- Location permission prompts
+- Shake-to-refresh interactions
+
+**Manual smoke testing (current)** — Every feature branch is exercised end-to-end on a Pixel 7 emulator and a physical realmeGT neo android 11: sign-in/register flows, GPS permission prompts, shake-to-refresh, survey answering, reward redemption stubs, and profile editing. We rely on verbose Logcat + in-app snackbars to verify success paths and failure fallbacks.
+
+**Sensor & location sanity checks** — For features tied to hardware, we toggle GPS on/off and simulate accelerometer input (via the Android Studio "Virtual Sensors" panel) to confirm graceful degradation: feed refresh falls back to cached surveys when GPS is unavailable, and the shake detector respects its cooldown/threshold so it does not spam refreshes.
 
 ---
 
@@ -128,6 +177,8 @@ For creators (future web portal), QZone enables **precise geo-targeting** to col
 - **Backend**
   - Since the proposal the Java backend now exposes login, register, survey CRUD, and “get nearby surveys” endpoints.
   - Mobile app already consumes `/api/user/login`, `/api/user/register`, and `/api/survey/submit`; feed currently uses mock data but the Retrofit client is ready to swap in the live `nearby` endpoint.
+
+
 
 ---
 

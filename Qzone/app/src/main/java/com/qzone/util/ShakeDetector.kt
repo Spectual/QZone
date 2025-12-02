@@ -5,6 +5,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import kotlin.math.sqrt
+import com.qzone.util.QLog
 
 class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
 
@@ -36,7 +37,10 @@ class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
                 if (speed > shakeThreshold) {
                     if ((curTime - lastShakeTime) > minTimeBetweenShakesMs) {
                         lastShakeTime = curTime
+                        QLog.d(TAG) { "Shake detected speed=$speed" }
                         onShake()
+                    } else {
+                        QLog.d(TAG) { "Shake ignored due to cooldown speed=$speed" }
                     }
                 }
 
@@ -49,6 +53,10 @@ class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Not used
+    }
+
+    companion object {
+        private const val TAG = "ShakeDetector"
     }
 }
 

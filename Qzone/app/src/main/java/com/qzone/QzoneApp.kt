@@ -1,6 +1,7 @@
 package com.qzone
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import com.qzone.data.database.QzoneDatabase
 import com.qzone.data.repository.LocationRepositoryImpl
 import com.qzone.data.repository.FirebaseUserRepository
@@ -13,6 +14,7 @@ import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
+import com.qzone.util.QLog
 
 class QzoneApp : Application() {
 
@@ -21,6 +23,8 @@ class QzoneApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        val isDebugBuild = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        QLog.enableLogging(isDebugBuild)
         FirebaseUserRepository.ensureFirebaseInitialized(this)
         UserLocalStorage.initialize(this)
         

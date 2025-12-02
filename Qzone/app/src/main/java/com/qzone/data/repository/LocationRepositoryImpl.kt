@@ -14,10 +14,10 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import android.util.Log
-import android.widget.Toast
 import com.qzone.data.model.UserLocation
 import com.qzone.domain.repository.LocationRepository
 import com.qzone.util.CoordinateConverter
+import com.qzone.util.QLog
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -57,10 +57,12 @@ class LocationRepositoryImpl(
 
     override suspend fun getLastLocation(): com.qzone.data.model.LocationResult {
         if (!hasLocationPermission()) {
+            QLog.w(TAG) { "getLastLocation aborted: permission denied" }
             return com.qzone.data.model.LocationResult.PermissionDenied
         }
 
         if (!isLocationEnabled()) {
+            QLog.w(TAG) { "getLastLocation aborted: location disabled" }
             return com.qzone.data.model.LocationResult.LocationDisabled
         }
 
@@ -68,7 +70,7 @@ class LocationRepositoryImpl(
             val location = fusedLocationClient.lastLocation.await()
             if (location != null) {
                 // Debug: log raw location values returned by FusedLocationProvider
-                Log.d(TAG, "getLastLocation: RAW GPS (WGS-84) -> latitude=${location.latitude}, longitude=${location.longitude}, time=${location.time}, accuracy=${location.accuracy}")
+                QLog.d(TAG) { "getLastLocation RAW lat=${location.latitude} lng=${location.longitude} time=${location.time} acc=${location.accuracy}" }
 
                 // Validate cached lastLocation: prefer current high-accuracy reading if lastLocation is old or coarse
                 val ageMs = System.currentTimeMillis() - location.time
@@ -81,7 +83,7 @@ class LocationRepositoryImpl(
                     // Convert coordinates if in China (WGS-84 -> GCJ-02)
                     val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
                         val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
-                        Log.d(TAG, "getLastLocation: CONVERTED to GCJ-02 -> latitude=${converted.first}, longitude=${converted.second}")
+                        QLog.d(TAG) { "getLastLocation converted GCJ-02 lat=${converted.first} lng=${converted.second}" }
                         converted
                     } else {
                         Pair(location.latitude, location.longitude)
@@ -98,7 +100,7 @@ class LocationRepositoryImpl(
                     )
                 } else {
                     // Cached value is too old or inaccurate; request an up-to-date high-accuracy location
-                    Log.d(TAG, "getLastLocation: cached location stale or coarse (age=${ageMs}ms, acc=${accuracyMeters}m) -> requesting fresh location")
+                    QLog.d(TAG) { "getLastLocation stale cache age=${ageMs}ms acc=${accuracyMeters}m -> requesting fresh reading" }
                     getCurrentLocation()
                 }
             } else {
@@ -116,11 +118,12 @@ class LocationRepositoryImpl(
 
     override suspend fun getCurrentLocation(): com.qzone.data.model.LocationResult {
         if (!hasLocationPermission()) {
+            QLog.w(TAG) { "getCurrentLocation aborted: permission denied" }
             return com.qzone.data.model.LocationResult.PermissionDenied
         }
 
         if (!isLocationEnabled()) {
-            Log.d(TAG, "getCurrentLocation: Location is disabled")
+            QLog.w(TAG) { "getCurrentLocation aborted: location disabled" }
             return com.qzone.data.model.LocationResult.LocationDisabled
         }
 
@@ -130,15 +133,15 @@ class LocationRepositoryImpl(
                 val location = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
                 if (location != null) {
                     // Log raw GPS coordinates (WGS-84)
-                    Log.d(TAG, "getCurrentLocation:RAW GPS (WGS-84) -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
+                    QLog.d(TAG) { "getCurrentLocation RAW lat=${location.latitude} lng=${location.longitude} acc=${location.accuracy}" }
                     
                     // Convert coordinates if in China (WGS-84 -> GCJ-02)
                     val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
                         val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
-                        Log.d(TAG, "getCurrentLocation:CONVERTED to GCJ-02 -> latitude=${converted.first}, longitude=${converted.second}")
+                        QLog.d(TAG) { "getCurrentLocation converted GCJ-02 lat=${converted.first} lng=${converted.second}" }
                         converted
                     } else {
-                        Log.d(TAG, "getCurrentLocation:Outside China, using WGS-84 as-is")
+                        QLog.d(TAG) { "getCurrentLocation outside China -> using WGS-84" }
                         Pair(location.latitude, location.longitude)
                     }
                     
@@ -154,7 +157,7 @@ class LocationRepositoryImpl(
                 }
             } catch (ignored: Exception) {
                 // Fall through to requestLocationUpdates approach if getCurrentLocation fails for any reason
-                Log.d(TAG, "getCurrentLocation: getCurrentLocation() failed, falling back to requestLocationUpdates: ${ignored.message}")
+                QLog.d(TAG) { "getCurrentLocation direct call failed -> ${ignored.message}" }
             }
 
             // Fallback: request location updates and wait for the next available result
@@ -169,12 +172,12 @@ class LocationRepositoryImpl(
                         super.onLocationResult(result)
                         result.lastLocation?.let { location ->
                             // Log raw GPS coordinates (WGS-84)
-                            Log.d(TAG, "getCurrentLocation:onLocationResult RAW GPS (WGS-84) -> latitude=${location.latitude}, longitude=${location.longitude}, accuracy=${location.accuracy}, time=${location.time}")
+                            QLog.d(TAG) { "getCurrentLocation callback RAW lat=${location.latitude} lng=${location.longitude} acc=${location.accuracy}" }
                             
                             // Convert coordinates if in China (WGS-84 -> GCJ-02)
                             val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
                                 val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
-                                Log.d(TAG, "getCurrentLocation:onLocationResult CONVERTED to GCJ-02 -> latitude=${converted.first}, longitude=${converted.second}")
+                                QLog.d(TAG) { "getCurrentLocation callback converted GCJ-02 lat=${converted.first} lng=${converted.second}" }
                                 converted
                             } else {
                                 Pair(location.latitude, location.longitude)
@@ -221,6 +224,7 @@ class LocationRepositoryImpl(
 
     override val locationUpdates: Flow<UserLocation> = callbackFlow {
         if (!hasLocationPermission()) {
+            QLog.w(TAG) { "locationUpdates aborted: permission denied" }
             close()
             return@callbackFlow
         }

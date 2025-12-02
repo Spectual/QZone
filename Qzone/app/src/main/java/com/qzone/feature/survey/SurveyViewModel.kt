@@ -3,7 +3,7 @@ package com.qzone.feature.survey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import android.util.Log
+import com.qzone.util.QLog
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
 import com.qzone.data.model.SurveyStatus
@@ -64,14 +64,14 @@ class SurveyViewModel(
                 runCatching {
                     localSurveyRepository.saveSurvey(it)
                 }.onFailure { throwable ->
-                    Log.w(TAG, "Failed to cache survey locally", throwable)
+                    QLog.w(TAG) { "Failed to cache survey locally: ${throwable.message}" }
                 }
             }
         }
     }
 
     fun onAnswerChanged(questionId: String, value: String, toggle: Boolean = false) {
-        Log.d(TAG, "onAnswerChanged: questionId=" + questionId + ", value=" + value + ", toggle=" + toggle)
+        QLog.d(TAG) { "onAnswerChanged question=$questionId value=$value toggle=$toggle" }
         val survey = _uiState.value.survey ?: return
         val question = survey.questions.firstOrNull { it.id == questionId } ?: return
         _uiState.update { state ->
@@ -103,6 +103,7 @@ class SurveyViewModel(
     }
 
     fun submit() {
+        QLog.d(TAG) { "submit() invoked for surveyId=$surveyId" }
         viewModelScope.launch {
             val currentState = _uiState.value
             val survey = currentState.survey ?: return@launch
@@ -117,16 +118,16 @@ class SurveyViewModel(
             _uiState.update { it.copy(isSubmitting = true, validationError = null) }
             // Build request body from answers
             val items = buildSubmitItems(survey, answersMap)
-            Log.d(TAG, "Submitting answers: surveyId=" + surveyId + ", items=" + items.size)
-            Log.d(TAG, "Submit payload JSON: ${items.toDebugJson()}")
+            QLog.d(TAG) { "Submitting answers: surveyId=$surveyId items=${items.size}" }
+            QLog.d(TAG) { "Submit payload JSON: ${items.toDebugJson()}" }
             val response = try {
                 QzoneApiClient.service.submitResponses(items)
             } catch (t: Throwable) {
-                Log.e(TAG, "Submit responses failed", t)
+                QLog.e(TAG, t) { "Submit responses failed" }
                 _uiState.update { it.copy(isSubmitting = false) }
                 return@launch
             }
-            Log.d(TAG, "Submit response -> success=" + response.success + ", code=" + response.code + ", msg=" + (response.msg ?: "") + ", data=" + (response.data ?: ""))
+            QLog.d(TAG) { "Submit response success=${response.success} code=${response.code} msg=${response.msg}" }
             if (response.success) {
                 repository.markSurveyCompleted(surveyId)
                 userRepository.recordSurveyCompletion(survey)
@@ -141,6 +142,7 @@ class SurveyViewModel(
                 }
             } else {
                 _uiState.update { it.copy(isSubmitting = false) }
+                QLog.w(TAG) { "Submit response unsuccessful: ${response.msg}" }
             }
         }
     }
@@ -158,8 +160,8 @@ class SurveyViewModel(
             return
         }
         viewModelScope.launch {
+            QLog.d(TAG) { "cacheProgress surveyId=$surveyId answers=${answersMap.size}" }
             val items = buildSubmitItems(survey, answersMap)
-            Log.d(TAG, "Caching survey progress: surveyId=" + surveyId + ", items=" + items.size)
             try {
                 val response = QzoneApiClient.service.submitResponses(items)
                 if (response.success) {
@@ -173,13 +175,13 @@ class SurveyViewModel(
                     try {
                         repository.saveSurveyProgress(updated)
                     } catch (cacheError: Throwable) {
-                        Log.w(TAG, "Failed to update local survey progress cache", cacheError)
+                        QLog.w(TAG) { "Failed to update local survey progress cache: ${cacheError.message}" }
                     }
                 } else {
-                    Log.w(TAG, "Cache progress API failed: ${response.msg}")
+                    QLog.w(TAG) { "Cache progress API failed: ${response.msg}" }
                 }
             } catch (t: Throwable) {
-                Log.w(TAG, "Failed to cache survey progress", t)
+                QLog.w(TAG) { "Failed to cache survey progress: ${t.message}" }
             } finally {
                 onFinished?.invoke()
             }
@@ -231,7 +233,7 @@ class SurveyViewModel(
         val previousPoints = lastKnownUserPoints
         return runCatching { QzoneApiClient.service.getCurrentUserProfile() }
             .onFailure { throwable ->
-                Log.w(TAG, "Unable to refresh user points after survey completion", throwable)
+                QLog.w(TAG) { "Unable to refresh user points after survey completion: ${throwable.message}" }
             }
             .getOrNull()
             ?.let { result ->
@@ -240,10 +242,10 @@ class SurveyViewModel(
                     val delta = (newPoints - previousPoints).coerceAtLeast(0)
                     lastKnownUserPoints = newPoints
                     runCatching { userRepository.updatePoints(newPoints) }
-                        .onFailure { Log.w(TAG, "Failed to update local user points cache", it) }
+                        .onFailure { QLog.w(TAG) { "Failed to update local user points cache: ${it.message}" } }
                     delta
                 } else {
-                    Log.w(TAG, "User profile fetch failed while refreshing points: ${result.msg}")
+                    QLog.w(TAG) { "User profile fetch failed while refreshing points: ${result.msg}" }
                     null
                 }
             }

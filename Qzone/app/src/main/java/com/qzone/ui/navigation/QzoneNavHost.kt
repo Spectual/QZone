@@ -15,6 +15,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.qzone.util.QLog
 import com.qzone.R
 import com.qzone.feature.auth.AuthViewModel
 import com.qzone.feature.auth.ui.RegisterScreen
@@ -46,12 +47,14 @@ fun QzoneNavHost(
     } else {
         QzoneDestination.SignIn.route
     }
+    QLog.i("Navigation") { "NavHost startDestination=$startDestination" }
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
         composable(QzoneDestination.SignIn.route) {
+            logScreen("SignIn")
             val context = LocalContext.current
             val authViewModel: AuthViewModel = viewModel(
                 factory = AuthViewModel.factory(
@@ -80,6 +83,7 @@ fun QzoneNavHost(
                             idToken,
                             onSuccess = {
                                 Log.d("GoogleSignIn", "Navigating to Feed after success")
+                                QLog.d("Navigation") { "SignIn -> Feed (Google)" }
                                 navController.navigate(QzoneDestination.Feed.route) {
                                     popUpTo(QzoneDestination.SignIn.route) { inclusive = true }
                                 }
@@ -116,6 +120,7 @@ fun QzoneNavHost(
                 onPasswordChanged = authViewModel::onPasswordChanged,
                 onSignIn = {
                     authViewModel.signIn {
+                        QLog.d("Navigation") { "SignIn -> Feed (email/password)" }
                         navController.navigate(QzoneDestination.Feed.route) {
                             popUpTo(QzoneDestination.SignIn.route) { inclusive = true }
                         }
@@ -125,10 +130,14 @@ fun QzoneNavHost(
                     Log.d("GoogleSignIn", "Launching Google Sign-In intent")
                     googleSignInLauncher.launch(googleSignInClient.signInIntent)
                 },
-                onNavigateToRegister = { navController.navigate(QzoneDestination.Register.route) }
+                onNavigateToRegister = {
+                    QLog.d("Navigation") { "SignIn -> Register" }
+                    navController.navigate(QzoneDestination.Register.route)
+                }
             )
         }
         composable(QzoneDestination.Register.route) {
+            logScreen("Register")
             val authViewModel: AuthViewModel = viewModel(
                 factory = AuthViewModel.factory(
                     appState.userRepository,
@@ -142,6 +151,7 @@ fun QzoneNavHost(
                 onPasswordChanged = authViewModel::onRegisterPasswordChanged,
                 onRegister = {
                     authViewModel.register {
+                        QLog.d("Navigation") { "Register -> Feed" }
                         navController.navigate(QzoneDestination.Feed.route) {
                             popUpTo(QzoneDestination.SignIn.route) { inclusive = true }
                         }
@@ -151,6 +161,7 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.Feed.route) {
+            logScreen("Feed")
             val feedViewModel: FeedViewModel = viewModel(
                 factory = FeedViewModel.factory(
                     appState.surveyRepository,
@@ -162,6 +173,7 @@ fun QzoneNavHost(
                 state = feedViewModel.uiState,
                 onRefresh = feedViewModel::refresh,
                 onSurveySelected = { surveyId ->
+                    QLog.d("Navigation") { "Feed -> SurveyDetail $surveyId" }
                     navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
                 },
                 onLocationPermissionGranted = feedViewModel::onLocationPermissionGranted,
@@ -172,6 +184,7 @@ fun QzoneNavHost(
             route = QzoneDestination.SurveyDetail.route,
             arguments = listOf(navArgument(QzoneDestination.SurveyDetail.surveyIdArg) { type = NavType.StringType })
         ) { backStackEntry ->
+            logScreen("SurveyDetail")
             val surveyId = backStackEntry.arguments?.getString(QzoneDestination.SurveyDetail.surveyIdArg).orEmpty()
             val surveyViewModel: SurveyViewModel = viewModel(
                 factory = SurveyViewModel.factory(
@@ -194,6 +207,7 @@ fun QzoneNavHost(
                 onCompletionAcknowledged = {
                     val popped = navController.popBackStack()
                     if (!popped) {
+                        QLog.d("Navigation") { "Register (profile) -> Feed" }
                         navController.navigate(QzoneDestination.Feed.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 inclusive = false
@@ -206,6 +220,7 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.Profile.route) {
+            logScreen("Profile")
             val context = LocalContext.current
             val profileViewModel: ProfileViewModel = viewModel(
                 factory = ProfileViewModel.factory(
@@ -238,12 +253,19 @@ fun QzoneNavHost(
                 state = profileViewModel.uiState,
                 onViewRewards = { appState.navigateTopLevel(QzoneDestination.Rewards) },
                 onHistoryClick = { appState.navigateTopLevel(QzoneDestination.History) },
-                onOpenSettings = { navController.navigate(QzoneDestination.ProfileSettings.route) },
-                onWalletClick = { navController.navigate(QzoneDestination.Wallet.route) },
+                onOpenSettings = {
+                    QLog.d("Navigation") { "Profile -> Settings" }
+                    navController.navigate(QzoneDestination.ProfileSettings.route)
+                },
+                onWalletClick = {
+                    QLog.d("Navigation") { "Profile -> Wallet" }
+                    navController.navigate(QzoneDestination.Wallet.route)
+                },
                 onAvatarClick = { avatarPicker.launch("image/*") }
             )
         }
         composable(QzoneDestination.Wallet.route) {
+            logScreen("Wallet")
             val parentEntry = remember(it) {
                 navController.getBackStackEntry(QzoneDestination.Profile.route)
             }
@@ -262,6 +284,7 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.EditProfile.route) {
+            logScreen("EditProfile")
             val profileViewModel: ProfileViewModel = viewModel(
                 factory = ProfileViewModel.factory(
                     appState.userRepository,
@@ -284,6 +307,7 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.ProfileSettings.route) {
+            logScreen("ProfileSettings")
             val profileViewModel: ProfileViewModel = viewModel(
                 factory = ProfileViewModel.factory(
                     appState.userRepository,
@@ -294,11 +318,15 @@ fun QzoneNavHost(
             )
             ProfileSettingsScreen(
                 onBack = { navController.popBackStack() },
-                onEditProfile = { navController.navigate(QzoneDestination.EditProfile.route) },
+                onEditProfile = {
+                    QLog.d("Navigation") { "ProfileSettings -> EditProfile" }
+                    navController.navigate(QzoneDestination.EditProfile.route)
+                },
                 isDarkTheme = appState.useDarkTheme,
                 onToggleDarkMode = appState.onToggleDarkTheme,
                 onLogout = {
                     profileViewModel.signOut {
+                        QLog.d("Navigation") { "ProfileSettings -> SignIn (logout)" }
                         navController.navigate(QzoneDestination.SignIn.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 inclusive = true
@@ -310,22 +338,28 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.History.route) {
+            logScreen("History")
             val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(appState.surveyRepository))
             HistoryScreen(
                 state = historyViewModel.uiState,
                 onQueryChanged = historyViewModel::onQueryChange,
                 onSurveyClick = { surveyId ->
+                    QLog.d("Navigation") { "History -> SurveyDetail $surveyId" }
                     navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
                 },
                 locationRepository = appState.locationRepository
             )
         }
         composable(QzoneDestination.Rewards.route) {
+            logScreen("Rewards")
             val context = LocalContext.current
             val rewardsViewModel: RewardsViewModel = viewModel(factory = RewardsViewModel.factory(appState.rewardRepository))
             RewardsScreen(
                 state = rewardsViewModel.uiState,
-                onRewardSelected = { id -> navController.navigate(QzoneDestination.RewardDetail.createRoute(id)) },
+                onRewardSelected = { id ->
+                    QLog.d("Navigation") { "Rewards -> RewardDetail $id" }
+                    navController.navigate(QzoneDestination.RewardDetail.createRoute(id))
+                },
                 onRedeem = { reward ->
                     rewardsViewModel.redeemReward(reward) { success, message ->
                         Toast.makeText(
@@ -341,6 +375,7 @@ fun QzoneNavHost(
             route = QzoneDestination.RewardDetail.route,
             arguments = listOf(navArgument(QzoneDestination.RewardDetail.rewardIdArg) { type = NavType.StringType })
         ) { backStackEntry ->
+            logScreen("RewardDetail")
             val rewardId = backStackEntry.arguments?.getString(QzoneDestination.RewardDetail.rewardIdArg).orEmpty()
             val rewardDetailViewModel: RewardDetailViewModel = viewModel(factory = RewardDetailViewModel.factory(appState.rewardRepository, rewardId))
             RewardDetailScreen(
@@ -350,4 +385,8 @@ fun QzoneNavHost(
             )
         }
     }
+}
+
+private fun logScreen(name: String) {
+    QLog.d("Navigation") { "Rendering $name screen" }
 }

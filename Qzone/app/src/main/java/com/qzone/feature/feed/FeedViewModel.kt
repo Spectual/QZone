@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import android.util.Log
+import com.qzone.util.QLog
 
 data class FeedUiState(
     val surveys: List<Survey> = emptyList(),
@@ -49,6 +49,7 @@ class FeedViewModel(
         // Observe local cache first to render offline data
         viewModelScope.launch {
             localSurveyRepository.getAllSurveys().collect { localSurveys ->
+                QLog.d(TAG) { "Local survey flow emitted size=${localSurveys.size}" }
                 val active = localSurveys.filterNot { it.isCompleted }
                 val completed = localSurveys.count { it.isCompleted }
                 _uiState.update { state ->
@@ -62,6 +63,7 @@ class FeedViewModel(
         }
         viewModelScope.launch {
             surveyRepository.nearbySurveys.collect { surveys ->
+                QLog.d(TAG) { "Remote survey flow emitted size=${surveys.size}" }
                 val active = surveys.filterNot { it.isCompleted }
                 val completed = surveys.count { it.isCompleted }
                 if (surveys.isNotEmpty()) {
@@ -108,6 +110,7 @@ class FeedViewModel(
 
     
     fun refreshWithLocation() {
+        QLog.d(TAG) { "refreshWithLocation() invoked" }
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, locationError = null) }
 
@@ -120,28 +123,32 @@ class FeedViewModel(
             when (val result = locationRepository.getCurrentLocation()) {
                 is LocationResult.Success -> {
                     val success = result as LocationResult.Success
+                    QLog.d(TAG) { "Location success lat=${success.location.latitude}, lng=${success.location.longitude}" }
                     _uiState.update { it.copy(currentLocation = success.location) }
                     try {
                         surveyRepository.refreshNearby(success.location, radiusMeters = 5000)
                         refreshHistorySnapshot()
                     } catch (t: Throwable) {
-                        Log.e(TAG, "Failed to refresh nearby surveys", t)
+                        QLog.e(TAG, t) { "Failed to refresh nearby surveys" }
                         _uiState.update { it.copy(locationError = t.message ?: "刷新附近问卷失败") }
                     }
                     loadNearbyLocationsWithCoordinates(success.location.latitude, success.location.longitude)
                 }
                 is LocationResult.PermissionDenied -> {
+                    QLog.w(TAG) { "Location permission denied when refreshing feed" }
                     _uiState.update { it.copy(locationError = "Location permission denied") }
                     surveyRepository.refreshNearby(null)
                     refreshHistorySnapshot()
                 }
                 is LocationResult.LocationDisabled -> {
+                    QLog.w(TAG) { "Location services disabled" }
                     _uiState.update { it.copy(locationError = "Please enable location services") }
                     surveyRepository.refreshNearby(null)
                     refreshHistorySnapshot()
                 }
                 is LocationResult.Error -> {
                     val error = result as LocationResult.Error
+                    QLog.e(TAG) { "Location error: ${error.message}" }
                     _uiState.update { it.copy(locationError = error.message) }
                     surveyRepository.refreshNearby(null)
                     refreshHistorySnapshot()
@@ -153,6 +160,7 @@ class FeedViewModel(
     }
 
     fun loadNearbyLocations() {
+        QLog.d(TAG) { "loadNearbyLocations() invoked" }
         viewModelScope.launch {
             // Try to get current location and load nearby surveys
             when (val result = locationRepository.getCurrentLocation()) {
@@ -168,6 +176,7 @@ class FeedViewModel(
     }
 
     private fun loadNearbyLocationsWithCoordinates(latitude: Double, longitude: Double) {
+        QLog.d(TAG) { "loadNearbyLocationsWithCoordinates lat=$latitude lng=$longitude" }
         viewModelScope.launch {
             if (!hasValidSession()) {
                 return@launch
@@ -191,6 +200,7 @@ class FeedViewModel(
                 )
                 val result = com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(body)
                 if (result.success && result.data != null) {
+                    QLog.d(TAG) { "Nearby location API returned ${result.data.size} entries" }
                     _uiState.update { it.copy(nearbyLocations = result.data, isLoadingNearby = false) }
                     // Save nearby locations to local database
                     try {
@@ -199,6 +209,7 @@ class FeedViewModel(
                         dbError.printStackTrace()
                     }
                 } else {
+                    QLog.w(TAG) { "Nearby location API failure: ${result.msg}" }
                     _uiState.update { 
                         it.copy(
                             nearbyError = result.msg ?: "Failed to load nearby locations",
@@ -207,6 +218,7 @@ class FeedViewModel(
                     }
                 }
             } catch (e: Exception) {
+                QLog.e(TAG, e) { "Nearby location request failed" }
                 _uiState.update { 
                     it.copy(
                         nearbyError = e.message ?: "Failed to load nearby locations",
@@ -220,6 +232,7 @@ class FeedViewModel(
     private fun hasValidSession(): Boolean {
         val tokenPresent = !AuthTokenProvider.accessToken.isNullOrBlank()
         if (!tokenPresent) {
+            QLog.w(TAG) { "No auth token available; blocking network call" }
             _uiState.update { state ->
                 state.copy(
                     locationError = "请登录后再尝试加载附近问卷",
@@ -232,7 +245,9 @@ class FeedViewModel(
 
     private suspend fun refreshHistorySnapshot() {
         runCatching { surveyRepository.refreshSurveyHistory() }
-            .onFailure { Log.w(TAG, "Failed to refresh survey history", it) }
+            .onFailure { throwable ->
+                QLog.w(TAG) { "Failed to refresh survey history: ${throwable.message}" }
+            }
     }
 
     fun refresh() {

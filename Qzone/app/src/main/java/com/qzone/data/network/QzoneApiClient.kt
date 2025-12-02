@@ -1,6 +1,5 @@
 package com.qzone.data.network
 
-import android.util.Log
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -8,6 +7,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
+import com.qzone.util.QLog
 
 object QzoneApiClient {
 
@@ -42,10 +42,11 @@ object QzoneApiClient {
                 }
                 chain.proceed(request)
             }
+            .addInterceptor(ApiCallLoggingInterceptor())
             .addInterceptor { chain ->
                 val response = chain.proceed(chain.request())
                 if (response.code == 401) {
-                    Log.w(TAG, "Received HTTP 401 for ${response.request.url.encodedPath}; token may be missing or expired")
+                    QLog.w(TAG) { "Received HTTP 401 for ${response.request.url.encodedPath}; token may be missing or expired" }
                 }
                 response
             }

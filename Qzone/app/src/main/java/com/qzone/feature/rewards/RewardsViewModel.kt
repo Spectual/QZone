@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.qzone.util.QLog
 
 data class RewardsUiState(
     val rewards: List<Reward> = emptyList()
@@ -24,6 +25,7 @@ class RewardsViewModel(private val rewardRepository: RewardRepository) : ViewMod
     init {
         viewModelScope.launch {
             rewardRepository.availableRewards.collect { list ->
+                QLog.d(TAG) { "Rewards flow update count=${list.size}" }
                 _uiState.update { it.copy(rewards = list) }
             }
         }
@@ -32,21 +34,27 @@ class RewardsViewModel(private val rewardRepository: RewardRepository) : ViewMod
     fun redeemReward(reward: Reward, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {
+                QLog.d(TAG) { "redeemReward requested id=${reward.id} cost=${reward.pointsCost}" }
                 val success = rewardRepository.redeemReward(reward)
                 if (success) {
+                    QLog.i(TAG) { "Reward ${reward.id} redeemed successfully" }
                     onResult(true, "Redemption successful")
                 } else {
+                    QLog.w(TAG) { "Reward ${reward.id} redeem returned false" }
                     onResult(false, "Redemption failed, please try again later")
                 }
             } catch (e: com.qzone.domain.repository.RewardRepository.InsufficientPointsException) {
+                QLog.w(TAG) { "Insufficient points for reward ${reward.id}: ${e.message}" }
                 onResult(false, e.message ?: "Insufficient points to redeem")
             } catch (t: Throwable) {
+                QLog.e(TAG, t) { "redeemReward exception for reward=${reward.id}" }
                 onResult(false, t.message ?: "Redemption failed, please try again later")
             }
         }
     }
 
     companion object {
+        private const val TAG = "RewardsViewModel"
         fun factory(repository: RewardRepository): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -71,11 +79,14 @@ class RewardDetailViewModel(
 
     init {
         viewModelScope.launch {
-            _uiState.update { it.copy(reward = repository.getReward(rewardId)) }
+            val reward = repository.getReward(rewardId)
+            QLog.d(TAG_DETAIL) { "Loaded reward detail id=$rewardId found=${reward != null}" }
+            _uiState.update { it.copy(reward = reward) }
         }
     }
 
     companion object {
+        private const val TAG_DETAIL = "RewardDetailVM"
         fun factory(repository: RewardRepository, rewardId: String): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

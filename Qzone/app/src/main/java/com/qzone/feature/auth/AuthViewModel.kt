@@ -3,7 +3,7 @@ package com.qzone.feature.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import android.util.Log
+import com.qzone.util.QLog
 import com.qzone.data.model.AuthResult
 import com.qzone.domain.repository.UserRepository
 import com.qzone.domain.repository.SurveyRepository
@@ -64,6 +64,7 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val state = uiState.value
+            QLog.d(TAG) { "signIn requested email=${state.email}" }
             if (state.email.isBlank() || state.password.isBlank()) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Please enter email and password") }
                 return@launch
@@ -81,11 +82,11 @@ class AuthViewModel(
     }
 
     fun signInWithGoogle(idToken: String, onSuccess: () -> Unit, onFailure: (String?) -> Unit) {
-        Log.d("AuthViewModel", "signInWithGoogle called with token length: ${idToken.length}")
+        QLog.d(TAG) { "signInWithGoogle tokenLength=${idToken.length}" }
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = userRepository.signInWithGoogle(idToken)
-            Log.d("AuthViewModel", "signInWithGoogle result: success=${result.success}, error=${result.errorMessage}")
+            QLog.d(TAG) { "signInWithGoogle result success=${result.success} error=${result.errorMessage}" }
             if (result.success) {
                 refreshUserProfile()
                 refreshUserResponses()
@@ -102,6 +103,7 @@ class AuthViewModel(
         viewModelScope.launch {
             _registerState.update { it.copy(isLoading = true, errorMessage = null) }
             val state = registerState.value
+            QLog.d(TAG) { "register requested username=${state.username} email=${state.email}" }
             if (state.username.isBlank() || state.email.isBlank() || state.password.length < 6) {
                 _registerState.update {
                     it.copy(
@@ -125,15 +127,16 @@ class AuthViewModel(
 
     private suspend fun refreshUserResponses() {
         runCatching { surveyRepository.refreshSurveyHistory() }
-            .onFailure { throwable -> Log.w("AuthViewModel", "Failed to sync survey history after login", throwable) }
+            .onFailure { throwable -> QLog.w(TAG) { "Failed to sync survey history after login: ${throwable.message}" } }
     }
 
     private suspend fun refreshUserProfile() {
         runCatching { userRepository.refreshUserProfile() }
-            .onFailure { throwable -> Log.w("AuthViewModel", "Failed to refresh user profile after login", throwable) }
+            .onFailure { throwable -> QLog.w(TAG) { "Failed to refresh user profile after login: ${throwable.message}" } }
     }
 
     companion object {
+        private const val TAG = "AuthViewModel"
         fun factory(
             userRepository: UserRepository,
             surveyRepository: SurveyRepository

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.qzone.util.QLog
 
 import com.qzone.data.model.SurveyStatus
 
@@ -42,6 +43,7 @@ class HistoryViewModel(
                 }
                 completed to actualInProgress
             }.collect { (completed, inProgress) ->
+                QLog.d(TAG) { "History flow update completed=${completed.size} inProgress=${inProgress.size}" }
                 _uiState.update {
                     it.copy(
                         completedSurveys = completed,
@@ -56,15 +58,17 @@ class HistoryViewModel(
 
     fun refreshHistory() {
         viewModelScope.launch {
+            QLog.d(TAG) { "refreshHistory() invoked" }
             try {
                 surveyRepository.refreshSurveyHistory()
             } catch (e: Exception) {
-                // Handle error if needed, currently just logging in repository
+                QLog.w(TAG) { "Failed to refresh survey history: ${e.message}" }
             }
         }
     }
 
     fun onQueryChange(query: String) {
+        QLog.d(TAG) { "History query changed -> $query" }
         _uiState.update { state ->
             val filteredCompleted = filter(state.completedSurveys, query)
             val filteredInProgress = filter(state.inProgressSurveys, query)
@@ -85,6 +89,7 @@ class HistoryViewModel(
     }
 
     companion object {
+        private const val TAG = "HistoryViewModel"
         fun factory(surveyRepository: SurveyRepository): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

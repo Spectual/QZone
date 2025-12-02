@@ -1,6 +1,6 @@
 package com.qzone.data.repository
 
-import android.util.Log
+import com.qzone.util.QLog
 import com.qzone.data.database.QzoneDatabase
 import com.qzone.data.database.entity.NearbyLocationEntity
 import com.qzone.data.database.entity.SurveyEntity
@@ -26,6 +26,7 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
     // ===== Survey Operations =====
 
     suspend fun saveSurvey(survey: Survey) {
+        QLog.d(TAG) { "DB saveSurvey id=${survey.id} questions=${survey.questions.size}" }
         try {
             val surveyEntity = SurveyEntity.fromSurvey(survey)
             surveyDao.insertSurvey(surveyEntity)
@@ -42,19 +43,21 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
                 }
             }
 
-            Log.d(TAG, "Survey ${survey.id} saved successfully")
+            QLog.d(TAG) { "Survey ${survey.id} saved successfully" }
         } catch (e: Exception) {
-            Log.e(TAG, "Error saving survey: ${e.message}", e)
+            QLog.e(TAG, e) { "Error saving survey: ${e.message}" }
         }
     }
 
     suspend fun saveSurveys(surveys: List<Survey>) {
+        QLog.d(TAG) { "DB saveSurveys count=${surveys.size}" }
         surveys.forEach { survey ->
             saveSurvey(survey)
         }
     }
 
     suspend fun getSurveyById(id: String): Survey? {
+        QLog.d(TAG) { "DB getSurveyById id=$id" }
         return try {
             val survey = surveyDao.getSurveyById(id)
             if (survey != null) {
@@ -70,12 +73,13 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting survey by id: ${e.message}", e)
+            QLog.e(TAG, e) { "Error getting survey by id: ${e.message}" }
             null
         }
     }
 
     fun getAllSurveys(): Flow<List<Survey>> {
+        QLog.d(TAG) { "DB observing all surveys" }
         return surveyDao.getAllSurveys().map { surveys ->
             surveys.map { survey ->
                 // For getAllSurveys, we return surveys without their detailed questions
@@ -86,6 +90,7 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
     }
 
     fun getUncompletedSurveys(): Flow<List<Survey>> {
+        QLog.d(TAG) { "DB observing uncompleted surveys" }
         return surveyDao.getUncompletedSurveys().map { surveys ->
             surveys.map { survey ->
                 // For getUncompletedSurveys, we return surveys without their detailed questions
@@ -98,34 +103,37 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
     suspend fun markSurveyCompleted(id: String) {
         try {
             surveyDao.markSurveyAsCompleted(id)
-            Log.d(TAG, "Survey $id marked as completed")
+            QLog.d(TAG) { "Survey $id marked as completed" }
         } catch (e: Exception) {
-            Log.e(TAG, "Error marking survey as completed: ${e.message}", e)
+            QLog.e(TAG, e) { "Error marking survey as completed: ${e.message}" }
         }
     }
 
     suspend fun deleteSurvey(id: String) {
+        QLog.d(TAG) { "DB deleteSurvey id=$id" }
         try {
             val survey = surveyDao.getSurveyById(id)
             if (survey != null) {
                 surveyDao.deleteSurvey(survey)
-                Log.d(TAG, "Survey $id deleted")
+                QLog.d(TAG) { "Survey $id deleted" }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting survey: ${e.message}", e)
+            QLog.e(TAG, e) { "Error deleting survey: ${e.message}" }
         }
     }
 
     suspend fun deleteAllSurveys() {
+        QLog.d(TAG) { "DB deleteAllSurveys" }
         try {
             surveyDao.deleteAllSurveys()
-            Log.d(TAG, "All surveys deleted")
+            QLog.d(TAG) { "All surveys deleted" }
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting all surveys: ${e.message}", e)
+            QLog.e(TAG, e) { "Error deleting all surveys: ${e.message}" }
         }
     }
 
     suspend fun getSurveysByLocation(userLocation: UserLocation, radiusMeters: Int = 5000): List<Survey> {
+        QLog.d(TAG) { "DB getSurveysByLocation lat=${userLocation.latitude}, lng=${userLocation.longitude}, radius=$radiusMeters" }
         return try {
             // Convert radius from meters to degrees (rough approximation)
             val radiusDegrees = radiusMeters / 111000.0
@@ -146,7 +154,7 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
                 surveyEntity.toSurvey(questions)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting surveys by location: ${e.message}", e)
+            QLog.e(TAG, e) { "Error getting surveys by location: ${e.message}" }
             emptyList()
         }
     }
@@ -154,37 +162,42 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
     // ===== NearbyLocation Operations =====
 
     suspend fun saveNearbyLocation(location: NearbyLocation) {
+        QLog.d(TAG) { "DB saveNearbyLocation id=${location.documentId}" }
         try {
             val entity = NearbyLocationEntity.fromNearbyLocation(location)
             locationDao.insertLocation(entity)
-            Log.d(TAG, "Nearby location ${location.documentId} saved")
+            QLog.d(TAG) { "Nearby location ${location.documentId} saved" }
         } catch (e: Exception) {
-            Log.e(TAG, "Error saving nearby location: ${e.message}", e)
+            QLog.e(TAG, e) { "Error saving nearby location: ${e.message}" }
         }
     }
 
     suspend fun saveNearbyLocations(locations: List<NearbyLocation>) {
+        QLog.d(TAG) { "DB saveNearbyLocations count=${locations.size}" }
         locations.forEach { location ->
             saveNearbyLocation(location)
         }
     }
 
     suspend fun getNearbyLocationById(documentId: String): NearbyLocation? {
+        QLog.d(TAG) { "DB getNearbyLocationById id=$documentId" }
         return try {
             locationDao.getLocationById(documentId)?.toNearbyLocation()
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting nearby location: ${e.message}", e)
+            QLog.e(TAG, e) { "Error getting nearby location: ${e.message}" }
             null
         }
     }
 
     fun getAllNearbyLocations(): Flow<List<NearbyLocation>> {
+        QLog.d(TAG) { "DB observing all nearby locations" }
         return locationDao.getAllLocations().map { locations ->
             locations.map { it.toNearbyLocation() }
         }
     }
 
     suspend fun getNearbyLocationsByBounds(userLocation: UserLocation, radiusMeters: Int = 5000): List<NearbyLocation> {
+        QLog.d(TAG) { "DB getNearbyLocationsByBounds lat=${userLocation.latitude}, lng=${userLocation.longitude}, radius=$radiusMeters" }
         return try {
             val radiusDegrees = radiusMeters / 111000.0
 
@@ -196,48 +209,52 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
             locationDao.getLocationsByBounds(minLat, maxLat, minLng, maxLng)
                 .map { it.toNearbyLocation() }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting nearby locations by bounds: ${e.message}", e)
+            QLog.e(TAG, e) { "Error getting nearby locations by bounds: ${e.message}" }
             emptyList()
         }
     }
 
     suspend fun deleteNearbyLocation(documentId: String) {
+        QLog.d(TAG) { "DB deleteNearbyLocation id=$documentId" }
         try {
             val location = locationDao.getLocationById(documentId)
             if (location != null) {
                 locationDao.deleteLocation(location)
-                Log.d(TAG, "Nearby location $documentId deleted")
+                QLog.d(TAG) { "Nearby location $documentId deleted" }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting nearby location: ${e.message}", e)
+            QLog.e(TAG, e) { "Error deleting nearby location: ${e.message}" }
         }
     }
 
     suspend fun deleteAllNearbyLocations() {
+        QLog.d(TAG) { "DB deleteAllNearbyLocations" }
         try {
             locationDao.deleteAllLocations()
-            Log.d(TAG, "All nearby locations deleted")
+            QLog.d(TAG) { "All nearby locations deleted" }
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting all nearby locations: ${e.message}", e)
+            QLog.e(TAG, e) { "Error deleting all nearby locations: ${e.message}" }
         }
     }
 
     // ===== Database Info =====
 
     suspend fun getSurveyCount(): Int {
+        QLog.d(TAG) { "DB getSurveyCount" }
         return try {
             surveyDao.getSurveyCount()
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting survey count: ${e.message}", e)
+            QLog.e(TAG, e) { "Error getting survey count: ${e.message}" }
             0
         }
     }
 
     suspend fun getNearbyLocationCount(): Int {
+        QLog.d(TAG) { "DB getNearbyLocationCount" }
         return try {
             locationDao.getLocationCount()
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting location count: ${e.message}", e)
+            QLog.e(TAG, e) { "Error getting location count: ${e.message}" }
             0
         }
     }

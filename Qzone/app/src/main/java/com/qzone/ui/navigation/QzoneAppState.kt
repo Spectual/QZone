@@ -13,6 +13,7 @@ import com.qzone.domain.repository.LocationRepository
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
+import com.qzone.util.QLog
 
 @Composable
 fun rememberQzoneAppState(
@@ -68,6 +69,7 @@ class QzoneAppState(
     }
 
     fun navigateTopLevel(toDestination: QzoneDestination) {
+        QLog.i("Navigation") { "navigateTopLevel -> ${toDestination.route}" }
         navController.navigate(toDestination.route) {
             popUpTo(navController.graph.findStartDestination().id) {
                 saveState = true

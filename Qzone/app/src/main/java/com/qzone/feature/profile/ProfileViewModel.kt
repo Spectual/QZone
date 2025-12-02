@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.qzone.util.QLog
 
 data class ProfileUiState(
     val profile: UserProfile? = null,
@@ -69,6 +70,7 @@ class ProfileViewModel(
                 }
                 Triple(user, nextRewardCost, redemptions)
             }.collect { (user, nextRewardCost, redemptions) ->
+                QLog.d(TAG) { "Profile flow update points=${user.totalPoints} rewards=${redemptions.size}" }
                 _uiState.update { 
                     ProfileUiState(
                         profile = user, 
@@ -107,6 +109,7 @@ class ProfileViewModel(
     fun saveEdits() {
         viewModelScope.launch {
             val snapshot = editState.value
+            QLog.d(TAG) { "saveEdits displayName=${snapshot.name}" }
             _editState.update { it.copy(isSaving = true, message = null) }
             userRepository.updateProfile(
                 EditableProfile(
@@ -117,11 +120,13 @@ class ProfileViewModel(
                 )
             )
             _editState.update { it.copy(isSaving = false, message = "Profile updated") }
+            QLog.d(TAG) { "Profile updated successfully" }
         }
     }
 
     fun signOut(onSignedOut: () -> Unit) {
         viewModelScope.launch {
+            QLog.i(TAG) { "signOut requested" }
             userRepository.signOut()
             // Delete all local survey data when user signs out
             localSurveyRepository.deleteAllSurveys()
@@ -133,21 +138,26 @@ class ProfileViewModel(
     fun uploadAvatar(imageBytes: ByteArray, contentType: String, filename: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {
+                QLog.d(TAG) { "Uploading avatar filename=$filename size=${imageBytes.size}" }
                 val success = userRepository.uploadAvatar(imageBytes, contentType, filename)
                 if (success) {
+                    QLog.d(TAG) { "Avatar upload succeeded" }
                     onResult(true, "Avatar updated")
                 } else {
+                    QLog.w(TAG) { "Avatar upload failed via repository" }
                     onResult(false, "Failed to update avatar")
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (t: Throwable) {
+                QLog.e(TAG, t) { "Avatar upload threw exception" }
                 onResult(false, t.message ?: "Failed to update avatar")
             }
         }
     }
 
     companion object {
+        private const val TAG = "ProfileViewModel"
         fun factory(
             userRepository: UserRepository,
             rewardRepository: RewardRepository,

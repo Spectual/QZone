@@ -1,6 +1,7 @@
 package com.qzone.data.model
 
 import android.os.Parcelable
+import com.squareup.moshi.Json
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -53,10 +54,14 @@ data class SurveyHistoryItem(
 
 @Parcelize
 data class NearbyLocation(
-    val documentId: String,
-    val title: String,
-    val description: String,
-    val latitude: Double,
-    val longitude: Double,
-    val distance: Double? = null
+    @Json(name = "documentId") val documentId: String,
+    @Json(name = "title") val title: String,
+    @Json(name = "description") val description: String = "",
+    @Json(name = "latitude") val latitude: Double,
+    @Json(name = "longitude") val longitude: Double,
+    @Json(name = "distanceMile") val distance: Double? = null,
+    @Json(name = "imageUrl") val imageUrl: String? = null,
+    @Json(name = "questionNumber") val questionNumber: Int? = null,
+    @Json(name = "points") val points: Int? = null,
+    @Json(name = "status") val status: String? = null
 ) : Parcelable

@@ -175,21 +175,11 @@ class FeedViewModel(
             _uiState.update { it.copy(isLoadingNearby = true, nearbyError = null) }
             try {
                 val radiusKm = 5.0
-                val precision = 9
-                val maxResults = 200
-                val includeDistance = true
-                val sortByDistance = true
-
-                val body = com.qzone.data.network.model.NearbyLocationRequest(
+                val result = com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(
                     userLat = latitude,
                     userLng = longitude,
-                    radiusKm = radiusKm,
-                    precision = precision,
-                    maxResults = maxResults,
-                    includeDistance = includeDistance,
-                    sortByDistance = sortByDistance
+                    radiusKm = radiusKm
                 )
-                val result = com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(body)
                 if (result.success && result.data != null) {
                     _uiState.update { it.copy(nearbyLocations = result.data, isLoadingNearby = false) }
                     // Save nearby locations to local database

@@ -6,4 +6,25 @@
     <string name="sign_in_google">Sign in with Google</string>
     <string name="default_web_client_id">33786789573-l7gble3mmtjl57nm5gm850s52n2ngp40.apps.googleusercontent.com</string>
     <string name="google_sign_in_failed">Google sign-in failed. Please try again.</string>
+    <string name="sign_in_phone">Sign in with Phone</string>
+    <string name="phone_sign_in_failed">Phone sign-in failed. Please try again.</string>
+    <string name="phone_sign_in_title">Phone sign-in</string>
+    <string name="phone_number_hint">Phone number</string>
+    <string name="sms_code_hint">Verification code</string>
+    <string name="send_code">Send code</string>
+    <string name="verify_code">Verify code</string>
+    <string name="resend_code">Resend code</string>
+    <string name="country_code_hint">Country/region code</string>
+    <string name="phone_number_required">Please enter a valid phone number.</string>
+    <string name="country_code_required">Please enter a country/region code.</string>
+    <string name="sms_code_required">Please enter the verification code.</string>
+    <string name="google_maps_key">AIzaSyC33ih2yv1pJo3BRwrWsHNAu5w9xY4U9iA</string>
+    <string name="map_title">Nearby Surveys</string>
+    <string name="map_description">Find active survey opportunities by exploring the live map.</string>
+    <string name="map_location_label">Current location</string>
+    <string name="map_fetching_location">Fetching your location...</string>
+    <string name="map_refresh">Refresh</string>
+    <string name="map_enable_location">Enable location</string>
+    <string name="map_no_results">No nearby surveys yet. Try refreshing or move to a different area.</string>
+    <string name="map_result_count">%1$d survey spots loaded</string>
 </resources>

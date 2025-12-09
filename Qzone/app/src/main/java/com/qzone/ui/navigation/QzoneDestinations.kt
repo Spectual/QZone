@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -25,6 +26,7 @@ sealed class QzoneDestination(val route: String) {
     data object EditProfile : QzoneDestination("profile/edit")
     data object ProfileSettings : QzoneDestination("profile/settings")
     data object Wallet : QzoneDestination("profile/wallet")
+    data object NearbyMap : QzoneDestination("map/nearby")
 }
 
 data class QzoneTopLevelDestination(
@@ -38,6 +40,11 @@ val TOP_LEVEL_DESTINATIONS = listOf(
         destination = QzoneDestination.Feed,
         label = "Home",
         icon = Icons.Filled.Place
+    ),
+    QzoneTopLevelDestination(
+        destination = QzoneDestination.NearbyMap,
+        label = "Map",
+        icon = Icons.Filled.Map
     ),
     QzoneTopLevelDestination(
         destination = QzoneDestination.History,

@@ -3,13 +3,38 @@ package com.qzone.ui.navigation
 import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -23,6 +48,8 @@ import com.qzone.feature.feed.FeedViewModel
 import com.qzone.feature.feed.ui.FeedScreen
 import com.qzone.feature.history.HistoryViewModel
 import com.qzone.feature.history.ui.HistoryScreen
+import com.qzone.feature.map.ui.NearbySurveyMapScreen
+import com.qzone.feature.map.NearbyMapViewModel
 import com.qzone.feature.profile.ProfileViewModel
 import com.qzone.feature.profile.ui.EditProfileScreen
 import com.qzone.feature.profile.ui.ProfileScreen
@@ -34,6 +61,15 @@ import com.qzone.feature.rewards.ui.RewardDetailScreen
 import com.qzone.feature.rewards.ui.RewardsScreen
 import com.qzone.feature.survey.SurveyViewModel
 import com.qzone.feature.survey.ui.SurveyScreen
+import com.google.firebase.FirebaseException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.PhoneAuthProvider
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun QzoneNavHost(
@@ -53,12 +89,148 @@ fun QzoneNavHost(
     ) {
         composable(QzoneDestination.SignIn.route) {
             val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            val firebaseAuth = remember { FirebaseAuth.getInstance() }
+            var showPhoneDialog by remember { mutableStateOf(false) }
+            val defaultCountryCode = "+1"
+            var countryCode by remember { mutableStateOf(defaultCountryCode) }
+            var phoneNumber by remember { mutableStateOf("") }
+            var smsCode by remember { mutableStateOf("") }
+            var verificationId by remember { mutableStateOf<String?>(null) }
+            var resendToken by remember { mutableStateOf<PhoneAuthProvider.ForceResendingToken?>(null) }
+            var phoneAuthError by remember { mutableStateOf<String?>(null) }
+            var isPhoneAuthLoading by remember { mutableStateOf(false) }
+            val phoneFailureMessage = stringResource(id = R.string.phone_sign_in_failed)
             val authViewModel: AuthViewModel = viewModel(
                 factory = AuthViewModel.factory(
                     appState.userRepository,
                     appState.surveyRepository
                 )
             )
+            fun resetPhoneAuthState() {
+                countryCode = defaultCountryCode
+                phoneNumber = ""
+                smsCode = ""
+                verificationId = null
+                resendToken = null
+                phoneAuthError = null
+                isPhoneAuthLoading = false
+            }
+            fun handlePhoneCredential(credential: PhoneAuthCredential) {
+                coroutineScope.launch {
+                    try {
+                        isPhoneAuthLoading = true
+                        phoneAuthError = null
+                        firebaseAuth.signInWithCredential(credential).await()
+                        authViewModel.finalizeFirebaseLogin(
+                            onSuccess = {
+                                isPhoneAuthLoading = false
+                                showPhoneDialog = false
+                                resetPhoneAuthState()
+                                Log.d("PhoneAuth", "Phone sign-in successful, navigating to Feed")
+                                navController.navigate(QzoneDestination.Feed.route) {
+                                    popUpTo(QzoneDestination.SignIn.route) { inclusive = true }
+                                }
+                            },
+                            onFailure = { message ->
+                                isPhoneAuthLoading = false
+                                val error = message ?: phoneFailureMessage
+                                phoneAuthError = error
+                                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        Log.e("PhoneAuth", "signInWithCredential failed", e)
+                        isPhoneAuthLoading = false
+                        val error = e.localizedMessage ?: phoneFailureMessage
+                        phoneAuthError = error
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            val phoneAuthCallbacks = remember(phoneFailureMessage, context) {
+                object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                    override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                        Log.d("PhoneAuth", "Verification completed automatically")
+                        smsCode = credential.smsCode.orEmpty()
+                        handlePhoneCredential(credential)
+                    }
+
+                    override fun onVerificationFailed(e: FirebaseException) {
+                        Log.e("PhoneAuth", "Verification failed", e)
+                        isPhoneAuthLoading = false
+                        val error = e.localizedMessage ?: phoneFailureMessage
+                        phoneAuthError = error
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onCodeSent(id: String, token: PhoneAuthProvider.ForceResendingToken) {
+                        Log.d("PhoneAuth", "Code sent, verificationId=$id")
+                        verificationId = id
+                        resendToken = token
+                        smsCode = ""
+                        isPhoneAuthLoading = false
+                        phoneAuthError = null
+                    }
+                }
+            }
+            fun requestVerificationCode(useResendToken: Boolean = false) {
+                val trimmedCode = countryCode.trim()
+                val trimmedNumber = phoneNumber.trim()
+                Log.d("PhoneAuth", "Requesting verification code. useResendToken=$useResendToken rawCode=$trimmedCode rawNumber=$trimmedNumber")
+                if (trimmedCode.isBlank()) {
+                    phoneAuthError = context.getString(R.string.country_code_required)
+                    Log.w("PhoneAuth", "Country code empty, aborting verification request")
+                    return
+                }
+                if (trimmedNumber.isBlank()) {
+                    phoneAuthError = context.getString(R.string.phone_number_required)
+                    Log.w("PhoneAuth", "Phone number empty, aborting verification request")
+                    return
+                }
+                val normalizedCode = if (trimmedCode.startsWith("+")) trimmedCode else "+$trimmedCode"
+                val normalizedNumber = trimmedNumber.filterNot { it.isWhitespace() }
+                val fullNumber = normalizedCode + normalizedNumber
+                Log.d("PhoneAuth", "Normalized phone=$fullNumber")
+                val activity = context as? ComponentActivity
+                if (activity == null) {
+                    Toast.makeText(context, phoneFailureMessage, Toast.LENGTH_SHORT).show()
+                    Log.e("PhoneAuth", "Context is not a ComponentActivity, cannot start verification")
+                    return
+                }
+                isPhoneAuthLoading = true
+                phoneAuthError = null
+                val optionsBuilder = PhoneAuthOptions.newBuilder(firebaseAuth)
+                    .setPhoneNumber(fullNumber)
+                    .setTimeout(60L, TimeUnit.SECONDS)
+                    .setActivity(activity)
+                    .setCallbacks(phoneAuthCallbacks)
+                if (useResendToken) {
+                    resendToken?.let { optionsBuilder.setForceResendingToken(it) }
+                        ?: Log.w("PhoneAuth", "Resend requested but token is null")
+                }
+                Log.d("PhoneAuth", "Calling verifyPhoneNumber for $fullNumber")
+                PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build())
+            }
+            fun submitVerificationCode() {
+                val code = smsCode.trim()
+                Log.d("PhoneAuth", "Submitting verification code: $code")
+                if (code.isEmpty()) {
+                    phoneAuthError = context.getString(R.string.sms_code_required)
+                    Log.w("PhoneAuth", "Verification code empty, aborting submit")
+                    return
+                }
+                val id = verificationId
+                if (id.isNullOrEmpty()) {
+                    phoneAuthError = phoneFailureMessage
+                    Log.e("PhoneAuth", "VerificationId is null, cannot submit code")
+                    return
+                }
+                Log.d("PhoneAuth", "Creating credential with verificationId=$id")
+                val credential = PhoneAuthProvider.getCredential(id, code)
+                handlePhoneCredential(credential)
+            }
             val googleSignInClient = remember(context) {
                 val options = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
                     com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
@@ -110,6 +282,42 @@ fun QzoneNavHost(
                     ).show()
                 }
             }
+            if (showPhoneDialog) {
+                PhoneAuthDialog(
+                    phoneNumber = phoneNumber,
+                    onPhoneNumberChanged = {
+                        phoneNumber = it
+                        phoneAuthError = null
+                    },
+                    countryCode = countryCode,
+                    onCountryCodeChanged = {
+                        countryCode = it
+                        phoneAuthError = null
+                    },
+                    smsCode = smsCode,
+                    onSmsCodeChanged = {
+                        smsCode = it
+                        phoneAuthError = null
+                    },
+                    isCodeSent = verificationId != null,
+                    isLoading = isPhoneAuthLoading,
+                    errorMessage = phoneAuthError,
+                    onDismiss = {
+                        if (!isPhoneAuthLoading) {
+                            showPhoneDialog = false
+                            resetPhoneAuthState()
+                        }
+                    },
+                    onPrimaryAction = {
+                        if (verificationId == null) {
+                            requestVerificationCode()
+                        } else {
+                            submitVerificationCode()
+                        }
+                    },
+                    onResend = { requestVerificationCode(useResendToken = true) }
+                )
+            }
             SignInScreen(
                 state = authViewModel.uiState,
                 onEmailChanged = authViewModel::onEmailChanged,
@@ -124,6 +332,10 @@ fun QzoneNavHost(
                 onGoogleSignIn = {
                     Log.d("GoogleSignIn", "Launching Google Sign-In intent")
                     googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                },
+                onPhoneSignIn = {
+                    phoneAuthError = null
+                    showPhoneDialog = true
                 },
                 onNavigateToRegister = { navController.navigate(QzoneDestination.Register.route) }
             )
@@ -166,6 +378,20 @@ fun QzoneNavHost(
                 },
                 onLocationPermissionGranted = feedViewModel::onLocationPermissionGranted,
                 locationRepository = appState.locationRepository
+            )
+        }
+        composable(QzoneDestination.NearbyMap.route) {
+            val mapViewModel: NearbyMapViewModel = viewModel(
+                factory = NearbyMapViewModel.factory(
+                    appState.locationRepository,
+                    appState.localSurveyRepository
+                )
+            )
+            val mapState by mapViewModel.uiState.collectAsStateWithLifecycle()
+            NearbySurveyMapScreen(
+                state = mapState,
+                onRefresh = mapViewModel::refresh,
+                onLocationPermissionGranted = mapViewModel::onLocationPermissionGranted
             )
         }
         composable(
@@ -350,4 +576,113 @@ fun QzoneNavHost(
             )
         }
     }
+}
+
+@Composable
+private fun PhoneAuthDialog(
+    phoneNumber: String,
+    onPhoneNumberChanged: (String) -> Unit,
+    countryCode: String,
+    onCountryCodeChanged: (String) -> Unit,
+    smsCode: String,
+    onSmsCodeChanged: (String) -> Unit,
+    isCodeSent: Boolean,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onPrimaryAction: () -> Unit,
+    onResend: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = {
+            if (!isLoading) {
+                onDismiss()
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onPrimaryAction,
+                enabled = !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = stringResource(
+                            id = if (isCodeSent) R.string.verify_code else R.string.send_code
+                        )
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLoading
+            ) {
+                Text(text = stringResource(id = android.R.string.cancel))
+            }
+        },
+        title = { Text(text = stringResource(id = R.string.phone_sign_in_title)) },
+        text = {
+            Column(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = countryCode,
+                        onValueChange = onCountryCodeChanged,
+                        label = { Text(text = stringResource(id = R.string.country_code_hint)) },
+                        singleLine = true,
+                        enabled = !isLoading,
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.width(96.dp)
+                    )
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = onPhoneNumberChanged,
+                        label = { Text(text = stringResource(id = R.string.phone_number_hint)) },
+                        singleLine = true,
+                        enabled = !isLoading,
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (isCodeSent) {
+                    OutlinedTextField(
+                        value = smsCode,
+                        onValueChange = onSmsCodeChanged,
+                        label = { Text(text = stringResource(id = R.string.sms_code_hint)) },
+                        singleLine = true,
+                        enabled = !isLoading,
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                if (isCodeSent) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    TextButton(
+                        onClick = onResend,
+                        enabled = !isLoading
+                    ) {
+                        Text(text = stringResource(id = R.string.resend_code))
+                    }
+                }
+            }
+        }
+    )
 }

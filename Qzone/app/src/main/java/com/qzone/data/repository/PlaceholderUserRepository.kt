@@ -83,6 +83,11 @@ class PlaceholderUserRepository : UserRepository {
         return AuthResult(success = true)
     }
 
+    override suspend fun finalizeFirebaseLogin(isThirdParty: Boolean): AuthResult {
+        delay(150)
+        return AuthResult(success = true)
+    }
+
     override suspend fun updateProfile(edit: EditableProfile) {
         delay(200)
         storedProfile = storedProfile.copy(

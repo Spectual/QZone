@@ -61,6 +61,7 @@ import com.qzone.feature.rewards.ui.RewardDetailScreen
 import com.qzone.feature.rewards.ui.RewardsScreen
 import com.qzone.feature.survey.SurveyViewModel
 import com.qzone.feature.survey.ui.SurveyScreen
+import com.qzone.domain.repository.FirebaseLoginMode
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -123,6 +124,7 @@ fun QzoneNavHost(
                         phoneAuthError = null
                         firebaseAuth.signInWithCredential(credential).await()
                         authViewModel.finalizeFirebaseLogin(
+                            mode = FirebaseLoginMode.PHONE,
                             onSuccess = {
                                 isPhoneAuthLoading = false
                                 showPhoneDialog = false

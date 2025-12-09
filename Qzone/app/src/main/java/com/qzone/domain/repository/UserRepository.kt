@@ -6,12 +6,18 @@ import com.qzone.data.model.Survey
 import com.qzone.data.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 
+enum class FirebaseLoginMode {
+    EMAIL_PASSWORD,
+    THIRD_PARTY,
+    PHONE
+}
+
 interface UserRepository {
     val currentUser: Flow<UserProfile>
     suspend fun signIn(username: String, password: String): AuthResult
     suspend fun register(username: String, email: String, password: String): AuthResult
     suspend fun signInWithGoogle(idToken: String): AuthResult
-    suspend fun finalizeFirebaseLogin(isThirdParty: Boolean = true): AuthResult
+    suspend fun finalizeFirebaseLogin(mode: FirebaseLoginMode = FirebaseLoginMode.THIRD_PARTY): AuthResult
     suspend fun updateProfile(edit: EditableProfile)
     suspend fun refreshUserProfile(): Boolean
     suspend fun recordSurveyCompletion(survey: Survey)

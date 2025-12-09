@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -102,6 +103,12 @@ fun ProfileSettingsScreen(
                             subtitle = if (isDarkTheme) "Dark theme enabled" else "Light theme enabled",
                             checked = isDarkTheme,
                             onCheckedChange = onToggleDarkMode
+                        )
+                        SettingsRow(
+                            icon = Icons.Filled.Phone,
+                            title = "Add phone number",
+                            subtitle = "Link a phone number for SMS login and account recovery",
+                            onClick = null
                         )
                         SettingsRow(
                             icon = Icons.Filled.Security,

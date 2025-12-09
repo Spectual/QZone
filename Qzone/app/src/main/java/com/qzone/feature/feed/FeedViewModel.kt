@@ -81,8 +81,8 @@ class FeedViewModel(
                     e.printStackTrace()
                 }
 
-                // Prefetch question counts for surveys missing details
-                surveys.filter { it.questionCount == 0 }.forEach { survey ->
+                // Prefetch surveys lacking essential details (e.g., description or question count)
+                surveys.filter { it.questionCount == 0 || it.description.isBlank() }.forEach { survey ->
                     if (prefetchingDetails.add(survey.id)) {
                         viewModelScope.launch {
                             try {

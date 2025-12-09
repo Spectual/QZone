@@ -28,6 +28,9 @@ interface QzoneApiService {
     @POST("/api/user/login")
     suspend fun login(@Body request: LoginRequest): ApiResult<LoginResponse>
 
+    @POST("/api/user/phone-login")
+    suspend fun loginPhone(@Body request: LoginRequest): ApiResult<LoginResponse>
+
     @POST("/api/user/third-party")
     suspend fun loginThirdParty(@Body request: ThirdPartyLoginRequest): ApiResult<LoginResponse>
 

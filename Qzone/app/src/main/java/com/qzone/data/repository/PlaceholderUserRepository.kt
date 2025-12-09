@@ -9,6 +9,7 @@ import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyHistoryItem
 import com.qzone.data.model.UserProfile
 import com.qzone.data.placeholder.PlaceholderDataSource
+import com.qzone.domain.repository.FirebaseLoginMode
 import com.qzone.domain.repository.UserRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -83,7 +84,7 @@ class PlaceholderUserRepository : UserRepository {
         return AuthResult(success = true)
     }
 
-    override suspend fun finalizeFirebaseLogin(isThirdParty: Boolean): AuthResult {
+    override suspend fun finalizeFirebaseLogin(mode: FirebaseLoginMode): AuthResult {
         delay(150)
         return AuthResult(success = true)
     }

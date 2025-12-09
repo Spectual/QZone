@@ -9,10 +9,71 @@
       "client_info": {
         "mobilesdk_app_id": "1:33786789573:android:37451c2790209b03923aac",
         "android_client_info": {
+          "package_name": "com.qzone"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "33786789573-8pbdidh6l2ue5smoh0c54gdt74ihhe00.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.qzone",
+            "certificate_hash": "2216185c9e8c8b43014d8f2d2e762d0f0f4b97a7"
+          }
+        },
+        {
+          "client_id": "33786789573-j6vdlfjbn72qkuucs9vjtm6t81j76nb9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.qzone",
+            "certificate_hash": "2e0825b4bc61b7557fe1622e1c3fd1f2d2fe45fc"
+          }
+        },
+        {
+          "client_id": "33786789573-l7gble3mmtjl57nm5gm850s52n2ngp40.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzOeoYQMogwIu_8FWDhdEf7dXzeV7-o-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "33786789573-l7gble3mmtjl57nm5gm850s52n2ngp40.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33786789573:android:14c7294c9b619256923aac",
+        "android_client_info": {
           "package_name": "com.qzone.debug"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "33786789573-5ae5bfmh5cfs0l40v4qrab7m6g90njae.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.qzone.debug",
+            "certificate_hash": "2216185c9e8c8b43014d8f2d2e762d0f0f4b97a7"
+          }
+        },
+        {
+          "client_id": "33786789573-j467b58agf3gn5v0i2gg1qilp1one1u1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.qzone.debug",
+            "certificate_hash": "2e0825b4bc61b7557fe1622e1c3fd1f2d2fe45fc"
+          }
+        },
         {
           "client_id": "33786789573-l7gble3mmtjl57nm5gm850s52n2ngp40.apps.googleusercontent.com",
           "client_type": 3

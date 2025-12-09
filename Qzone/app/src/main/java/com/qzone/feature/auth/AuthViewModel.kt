@@ -115,6 +115,22 @@ class AuthViewModel(
         }
     }
 
+    fun finalizeFirebaseLogin(isThirdParty: Boolean = true, onSuccess: () -> Unit, onFailure: (String?) -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val result = userRepository.finalizeFirebaseLogin(isThirdParty)
+            if (result.success) {
+                refreshUserProfile()
+                refreshUserResponses()
+                onSuccess()
+                _uiState.update { it.copy(isLoading = false) }
+            } else {
+                _uiState.update { it.copy(isLoading = false, errorMessage = result.errorMessage) }
+                onFailure(result.errorMessage)
+            }
+        }
+    }
+
     fun register(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _registerState.update { it.copy(isLoading = true, errorMessage = null) }

@@ -21,6 +21,7 @@ import com.qzone.data.network.model.RegisterRequest
 import com.qzone.data.network.model.ThirdPartyLoginRequest
 import com.qzone.data.network.model.UpdateAvatarRequest
 import com.qzone.data.network.model.UploadUrlRequest
+import com.qzone.domain.repository.FirebaseLoginMode
 import com.qzone.domain.repository.UserRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -72,7 +73,7 @@ class FirebaseUserRepository(
             auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = auth.currentUser
                 ?: return@runCatching AuthResult(success = false, errorMessage = "Firebase user not found")
-            refreshSession(firebaseUser, isThirdParty = false)
+            refreshSession(firebaseUser, FirebaseLoginMode.EMAIL_PASSWORD)
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
             AuthResult(success = false, errorMessage = throwable.toReadableMessage())
@@ -131,7 +132,7 @@ class FirebaseUserRepository(
                 return@runCatching AuthResult(success = false, errorMessage = "Firebase user not found")
             }
             Log.d(TAG, "signInWithGoogle: Firebase sign-in success, user=${firebaseUser.uid}, email=${firebaseUser.email}")
-            refreshSession(firebaseUser, isThirdParty = true)
+            refreshSession(firebaseUser, FirebaseLoginMode.THIRD_PARTY)
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
             Log.e(TAG, "signInWithGoogle: failed", throwable)
@@ -139,11 +140,11 @@ class FirebaseUserRepository(
         }
     }
 
-    override suspend fun finalizeFirebaseLogin(isThirdParty: Boolean): AuthResult {
+    override suspend fun finalizeFirebaseLogin(mode: FirebaseLoginMode): AuthResult {
         val firebaseUser = auth.currentUser
             ?: return AuthResult(success = false, errorMessage = "Firebase user not found")
-        Log.d(TAG, "finalizeFirebaseLogin: user=${firebaseUser.uid} isThirdParty=$isThirdParty")
-        return refreshSession(firebaseUser, isThirdParty)
+        Log.d(TAG, "finalizeFirebaseLogin: user=${firebaseUser.uid} mode=$mode")
+        return refreshSession(firebaseUser, mode)
     }
 
     override suspend fun updateProfile(edit: EditableProfile) {
@@ -323,7 +324,10 @@ class FirebaseUserRepository(
         return tokens.value?.accessToken?.isNotBlank() == true
     }
 
-    private suspend fun refreshSession(firebaseUser: FirebaseUser, isThirdParty: Boolean = false): AuthResult {
+    private suspend fun refreshSession(
+        firebaseUser: FirebaseUser,
+        mode: FirebaseLoginMode = FirebaseLoginMode.EMAIL_PASSWORD
+    ): AuthResult {
         val tokenResult = firebaseUser.getIdToken(true).await()
         val idToken = tokenResult.token
         if (idToken.isNullOrBlank()) {
@@ -331,10 +335,10 @@ class FirebaseUserRepository(
         }
         Log.d(TAG, "Firebase token: $idToken")
         val response = runCatching {
-            if (isThirdParty) {
-                apiService.loginThirdParty(ThirdPartyLoginRequest(tokenId = idToken))
-            } else {
-                apiService.login(LoginRequest(idToken))
+            when (mode) {
+                FirebaseLoginMode.THIRD_PARTY -> apiService.loginThirdParty(ThirdPartyLoginRequest(tokenId = idToken))
+                FirebaseLoginMode.PHONE -> apiService.loginPhone(LoginRequest(idToken))
+                FirebaseLoginMode.EMAIL_PASSWORD -> apiService.login(LoginRequest(idToken))
             }
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable

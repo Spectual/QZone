@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.qzone.util.QLog
 import com.qzone.data.model.AuthResult
+import com.qzone.domain.repository.FirebaseLoginMode
 import com.qzone.domain.repository.UserRepository
 import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -121,6 +122,26 @@ class AuthViewModel(
                 onSuccess()
             } else {
                 _registerState.update { it.copy(isLoading = false, errorMessage = result.errorMessage) }
+            }
+        }
+    }
+
+    fun finalizeFirebaseLogin(
+        mode: FirebaseLoginMode = FirebaseLoginMode.THIRD_PARTY,
+        onSuccess: () -> Unit,
+        onFailure: (String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            val result = userRepository.finalizeFirebaseLogin(mode)
+            if (result.success) {
+                refreshUserProfile()
+                refreshUserResponses()
+                _uiState.update { it.copy(isLoading = false) }
+                onSuccess()
+            } else {
+                _uiState.update { it.copy(isLoading = false, errorMessage = result.errorMessage) }
+                onFailure(result.errorMessage)
             }
         }
     }

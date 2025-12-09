@@ -53,15 +53,11 @@ data class SubmitResponseResult(
     @Json(name = "isFirstComplete") val isFirstComplete: Boolean = false
 )
 
-// Nearby location query body
+// Nearby location query body (POST fallback)
 data class NearbyLocationRequest(
     @Json(name = "userLat") val userLat: Double,
     @Json(name = "userLng") val userLng: Double,
-    @Json(name = "radiusKm") val radiusKm: Double,
-    @Json(name = "precision") val precision: Int,
-    @Json(name = "maxResults") val maxResults: Int,
-    @Json(name = "includeDistance") val includeDistance: Boolean,
-    @Json(name = "sortByDistance") val sortByDistance: Boolean
+    @Json(name = "radiusKm") val radiusKm: Double = 3.0
 )
 
 data class NetworkSurveyDetail(

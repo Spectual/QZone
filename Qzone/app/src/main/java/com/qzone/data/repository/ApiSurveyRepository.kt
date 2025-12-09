@@ -28,42 +28,22 @@ class ApiSurveyRepository : SurveyRepository {
         val lat = userLocation?.latitude ?: 0.0
         val lng = userLocation?.longitude ?: 0.0
         val radiusKm = radiusMeters / 1000.0
-        val maxResults = 200
-        val includeDistance = true
-        val sortByDistance = true
-
-        val precisionFallbacks = listOf(9, 8, 7, 6)
-        var foundData: List<com.qzone.data.model.NearbyLocation>? = null
-
-        var lastError: Throwable? = null
-
-        for (p in precisionFallbacks) {
-            val body = com.qzone.data.network.model.NearbyLocationRequest(
+        val result = try {
+            com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(
                 userLat = lat,
                 userLng = lng,
-                radiusKm = radiusKm,
-                precision = p,
-                maxResults = maxResults,
-                includeDistance = includeDistance,
-                sortByDistance = sortByDistance
+                radiusKm = radiusKm.coerceAtMost(50.0)
             )
-            val result = try {
-                com.qzone.data.network.QzoneApiClient.service.getNearbyLocations(body)
-            } catch (t: Throwable) {
-                lastError = t
-                if (t is HttpException && t.code() == 401) {
-                    Log.w(TAG, "Unauthorized while fetching nearby surveys; aborting retries")
-                    break
-                } else {
-                    Log.e(TAG, "Failed to fetch nearby surveys (precision=$p)", t)
-                    continue
-                }
+        } catch (t: Throwable) {
+            if (t is HttpException && t.code() == 401) {
+                Log.w(TAG, "Unauthorized while fetching nearby surveys; aborting refresh")
+            } else {
+                Log.e(TAG, "Failed to fetch nearby surveys", t)
             }
-            if (result.success && !result.data.isNullOrEmpty()) {
-                foundData = result.data
-                break
-            }
+            null
         }
+
+        val foundData = result?.takeIf { it.success }?.data
 
         if (foundData != null) {
             ensureHistorySynced()
@@ -92,9 +72,7 @@ class ApiSurveyRepository : SurveyRepository {
             val remaining = existingList.filter { it.id !in orderedIds }.mapNotNull { currentMap[it.id] }
             surveysFlow.value = orderedList + remaining
         } else {
-            if (lastError != null) {
-                Log.w(TAG, "Unable to load nearby surveys, keeping existing cache")
-            }
+            Log.w(TAG, "Unable to load nearby surveys, keeping existing cache")
         }
     }
 

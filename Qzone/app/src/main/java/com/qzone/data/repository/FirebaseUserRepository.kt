@@ -139,6 +139,13 @@ class FirebaseUserRepository(
         }
     }
 
+    override suspend fun finalizeFirebaseLogin(isThirdParty: Boolean): AuthResult {
+        val firebaseUser = auth.currentUser
+            ?: return AuthResult(success = false, errorMessage = "Firebase user not found")
+        Log.d(TAG, "finalizeFirebaseLogin: user=${firebaseUser.uid} isThirdParty=$isThirdParty")
+        return refreshSession(firebaseUser, isThirdParty)
+    }
+
     override suspend fun updateProfile(edit: EditableProfile) {
         val current = _currentUser.value
         val updated = current.copy(

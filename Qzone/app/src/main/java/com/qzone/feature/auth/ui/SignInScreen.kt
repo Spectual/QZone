@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -49,6 +50,7 @@ fun SignInScreen(
     onPasswordChanged: (String) -> Unit,
     onSignIn: () -> Unit,
     onGoogleSignIn: () -> Unit,
+    onPhoneSignIn: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
     val uiState by state.collectAsState()
@@ -158,6 +160,21 @@ fun SignInScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(text = stringResource(id = R.string.sign_in_google))
+                }
+                OutlinedButton(
+                    onClick = onPhoneSignIn,
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = stringResource(id = R.string.sign_in_phone))
                 }
                 uiState.errorMessage?.let {
                     Text(

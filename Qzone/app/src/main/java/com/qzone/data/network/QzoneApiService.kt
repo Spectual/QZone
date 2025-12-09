@@ -37,8 +37,15 @@ interface QzoneApiService {
     @POST("/api/response/")
     suspend fun submitResponses(@Body body: List<SubmitAnswerItem>): ApiResult<SubmitResponseResult>
 
+    @GET("/api/location/nearby")
+    suspend fun getNearbyLocations(
+        @Query("userLat") userLat: Double,
+        @Query("userLng") userLng: Double,
+        @Query("radiusKm") radiusKm: Double = 3.0
+    ): ApiResult<List<NearbyLocation>>
+
     @POST("/api/location/nearby")
-    suspend fun getNearbyLocations(@Body body: NearbyLocationRequest): ApiResult<List<NearbyLocation>>
+    suspend fun postNearbyLocations(@Body body: NearbyLocationRequest): ApiResult<List<NearbyLocation>>
 
     @GET("/api/survey/{id}")
     suspend fun getSurveyDetail(@Path("id") id: String): ApiResult<NetworkSurveyDetail>

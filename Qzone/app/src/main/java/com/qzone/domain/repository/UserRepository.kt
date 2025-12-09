@@ -11,6 +11,7 @@ interface UserRepository {
     suspend fun signIn(username: String, password: String): AuthResult
     suspend fun register(username: String, email: String, password: String): AuthResult
     suspend fun signInWithGoogle(idToken: String): AuthResult
+    suspend fun finalizeFirebaseLogin(isThirdParty: Boolean = true): AuthResult
     suspend fun updateProfile(edit: EditableProfile)
     suspend fun refreshUserProfile(): Boolean
     suspend fun recordSurveyCompletion(survey: Survey)

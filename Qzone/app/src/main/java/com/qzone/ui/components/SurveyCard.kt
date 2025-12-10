@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.qzone.data.model.Survey
 import com.qzone.domain.repository.LocationRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SurveyCard(
@@ -35,17 +37,25 @@ fun SurveyCard(
     locationRepository: LocationRepository? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    var locationAddress by remember(survey.id, survey.latitude, survey.longitude) { 
-        mutableStateOf<String?>(null) 
+    var locationAddress by remember(survey.id) {
+        mutableStateOf(
+            locationAddressCache[survey.id]
+        )
     }
     
     // Fetch address from coordinates
     LaunchedEffect(survey.id, survey.latitude, survey.longitude) {
-        if (locationRepository != null) {
-            locationAddress = locationRepository.getAddressFromCoordinates(
-                survey.latitude,
-                survey.longitude
-            )
+        if (locationRepository != null && locationAddress.isNullOrEmpty()) {
+            val fetched = withContext(Dispatchers.IO) {
+                locationRepository.getAddressFromCoordinates(
+                    survey.latitude,
+                    survey.longitude
+                )
+            }
+            if (!fetched.isNullOrEmpty()) {
+                locationAddress = fetched
+                locationAddressCache[survey.id] = fetched
+            }
         }
     }
     val isDark = colorScheme.background.luminance() < 0.2f
@@ -55,13 +65,18 @@ fun SurveyCard(
         listOf(Color(0xFFFFFFFF), Color(0xFFE9EBF1), Color(0xFFD4D7DF))
     }
     val shape = MaterialTheme.shapes.extraLarge
+    val borderColor = if (isDark) {
+        colorScheme.primary.copy(alpha = 0.35f)
+    } else {
+        colorScheme.outline.copy(alpha = 0.08f)
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .background(Brush.verticalGradient(gradientColors))
-            .border(1.dp, colorScheme.outline.copy(alpha = 0.05f), shape)
+            .border(1.dp, borderColor, shape)
             .clickable { onClick() }
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -164,10 +179,15 @@ fun SurveyCard(
         if (!survey.isCompleted && survey.currentQuestionIndex > 0 && survey.questions.isNotEmpty()) {
              LinearProgressIndicator(
                  progress = survey.currentQuestionIndex.toFloat() / survey.questions.size,
-                 modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .height(4.dp)
+                     .clip(RoundedCornerShape(2.dp)),
                  color = colorScheme.primary,
                  trackColor = colorScheme.surfaceVariant
              )
         }
     }
 }
+
+private val locationAddressCache = mutableMapOf<String, String?>()

@@ -11,6 +11,7 @@ import com.qzone.data.network.AuthTokenProvider
 import com.qzone.data.network.QzoneApiClient
 import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.domain.repository.LocationRepository
+import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,27 +25,43 @@ data class NearbyMapUiState(
     val hasLocationPermission: Boolean = false,
     val nearbyLocations: List<NearbyLocation> = emptyList(),
     val errorMessage: String? = null,
-    val locationError: String? = null
+    val locationError: String? = null,
+    val completedCount: Int = 0,
+    val activeCount: Int = 0
 )
 
 class NearbyMapViewModel(
     private val locationRepository: LocationRepository,
-    private val localSurveyRepository: LocalSurveyRepository
+    private val localSurveyRepository: LocalSurveyRepository,
+    private val surveyRepository: SurveyRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NearbyMapUiState())
     val uiState: StateFlow<NearbyMapUiState> = _uiState.asStateFlow()
+    private val surveyCompletionState = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    private var cachedLocations: List<NearbyLocation> = emptyList()
 
     init {
         updatePermissionState()
         observeCachedLocations()
+        observeSurveyCompletion()
         refresh()
     }
 
     private fun observeCachedLocations() {
         viewModelScope.launch {
             localSurveyRepository.getAllNearbyLocations().collectLatest { cached ->
-                _uiState.update { it.copy(nearbyLocations = cached) }
+                updateNearbyLocations(cached)
+            }
+        }
+    }
+
+    private fun observeSurveyCompletion() {
+        viewModelScope.launch {
+            surveyRepository.nearbySurveys.collectLatest { surveys ->
+                val completionMap = surveys.associate { it.id to it.isCompleted }
+                surveyCompletionState.value = completionMap
+                refreshVisibleLocations()
             }
         }
     }
@@ -119,13 +136,8 @@ class NearbyMapViewModel(
                 } catch (dbError: Exception) {
                     Log.w(TAG, "Failed to cache nearby locations", dbError)
                 }
-                _uiState.update {
-                    it.copy(
-                        nearbyLocations = response.data,
-                        isLoading = false,
-                        errorMessage = null
-                    )
-                }
+                updateNearbyLocations(response.data)
+                _uiState.update { it.copy(isLoading = false, errorMessage = null) }
             } else {
                 _uiState.update {
                     it.copy(
@@ -160,16 +172,35 @@ class NearbyMapViewModel(
         return tokenPresent
     }
 
+    private fun updateNearbyLocations(locations: List<NearbyLocation>) {
+        cachedLocations = locations
+        refreshVisibleLocations()
+    }
+
+    private fun refreshVisibleLocations() {
+        val locations = cachedLocations
+        val completionMap = surveyCompletionState.value
+        val (completed, active) = locations.partition { completionMap[it.documentId] == true }
+        _uiState.update {
+            it.copy(
+                nearbyLocations = active,
+                completedCount = completed.size,
+                activeCount = active.size
+            )
+        }
+    }
+
     companion object {
         private const val TAG = "NearbyMapViewModel"
 
         fun factory(
             locationRepository: LocationRepository,
-            localSurveyRepository: LocalSurveyRepository
+            localSurveyRepository: LocalSurveyRepository,
+            surveyRepository: SurveyRepository
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return NearbyMapViewModel(locationRepository, localSurveyRepository) as T
+                return NearbyMapViewModel(locationRepository, localSurveyRepository, surveyRepository) as T
             }
         }
     }

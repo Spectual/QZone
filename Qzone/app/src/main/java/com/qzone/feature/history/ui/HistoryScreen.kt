@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
+import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyHistoryItem
 import com.qzone.domain.repository.LocationRepository
 import com.qzone.feature.history.HistoryUiState
@@ -57,7 +58,8 @@ import kotlinx.coroutines.flow.StateFlow
 fun HistoryScreen(
     state: StateFlow<HistoryUiState>,
     onQueryChanged: (String) -> Unit,
-    onSurveyClick: (String) -> Unit,
+    onInProgressSurveyClick: (String) -> Unit,
+    onCompletedSurveyClick: (Survey) -> Unit,
     locationRepository: LocationRepository? = null
 ) {
     val uiState by state.collectAsState()
@@ -143,7 +145,13 @@ fun HistoryScreen(
                 items(items, key = { it.id }) { survey ->
                     SurveyCard(
                         survey = survey,
-                        onClick = { onSurveyClick(survey.id) },
+                        onClick = {
+                            if (selectedTab == 0) {
+                                onInProgressSurveyClick(survey.id)
+                            } else {
+                                onCompletedSurveyClick(survey)
+                            }
+                        },
                         locationRepository = locationRepository
                     )
                 }

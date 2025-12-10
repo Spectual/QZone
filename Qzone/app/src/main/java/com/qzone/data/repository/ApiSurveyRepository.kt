@@ -6,6 +6,8 @@ import com.qzone.data.model.UserLocation
 import com.qzone.data.network.QzoneApiClient
 import com.qzone.data.network.model.NetworkSurveyOption
 import com.qzone.data.network.model.NetworkSurveyQuestion
+import com.qzone.data.model.SurveyResponseDetail
+import com.qzone.data.model.QuestionAnswerResponse
 import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,14 +58,15 @@ class ApiSurveyRepository : SurveyRepository {
                 val merged = Survey(
                     id = loc.documentId,
                     title = loc.title,
-                    description = loc.description,
+                    description = loc.description.orEmpty(),
                     latitude = loc.latitude,
                     longitude = loc.longitude,
                     points = existing?.points ?: 0,
                     questions = existing?.questions ?: emptyList(),
                     questionCount = snapshot?.questionCount ?: existing?.questionCount ?: 0,
                     isCompleted = snapshot?.isCompleted ?: false,
-                    status = snapshot?.status ?: SurveyStatus.EMPTY
+                    status = snapshot?.status ?: SurveyStatus.EMPTY,
+                    responseId = existing?.responseId
                 )
                 currentMap[loc.documentId] = merged
                 orderedIds.add(loc.documentId)
@@ -114,12 +117,18 @@ class ApiSurveyRepository : SurveyRepository {
         }
     }
 
-    override suspend fun markSurveyCompleted(id: String) {
+    override suspend fun markSurveyCompleted(id: String, responseId: String?) {
         // Optionally call API to mark as completed
         // For now, just update local state
         rememberProgress(id, true, SurveyStatus.COMPLETE, questionCount = surveysFlow.value.firstOrNull { it.id == id }?.questionCount ?: 0)
         surveysFlow.value = surveysFlow.value.map {
-            if (it.id == id) it.copy(isCompleted = true, status = SurveyStatus.COMPLETE) else it
+            if (it.id == id) {
+                it.copy(
+                    isCompleted = true,
+                    status = SurveyStatus.COMPLETE,
+                    responseId = responseId ?: it.responseId
+                )
+            } else it
         }
     }
 
@@ -145,6 +154,21 @@ class ApiSurveyRepository : SurveyRepository {
         surveyStatusCache.clear()
         lastHistorySyncMs = 0L
         surveysFlow.value = emptyList()
+    }
+
+    override suspend fun getResponseDetail(responseId: String): SurveyResponseDetail? {
+        return try {
+            val response = QzoneApiClient.service.getResponseDetail(responseId)
+            if (response.success && response.data != null) {
+                response.data.toDomain()
+            } else {
+                Log.w(TAG, "Response detail fetch failed for $responseId: ${response.msg}")
+                null
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Response detail request error for $responseId", t)
+            null
+        }
     }
 
     private fun updateCachedSurvey(updated: Survey) {
@@ -213,7 +237,8 @@ class ApiSurveyRepository : SurveyRepository {
                         currentSurveys[existingIndex] = existing.copy(
                             isCompleted = record.isComplete,
                             status = status,
-                            questionCount = record.totalQuestions
+                            questionCount = record.totalQuestions,
+                            responseId = record.responseId ?: existing.responseId
                         )
                         rememberProgress(record.surveyId, record.isComplete, status, record.totalQuestions)
                     } else {
@@ -222,13 +247,14 @@ class ApiSurveyRepository : SurveyRepository {
                             Survey(
                                 id = record.surveyId,
                                 title = record.surveyTitle,
-                                description = record.surveyDescription,
+                                description = record.surveyDescription.orEmpty(),
                                 latitude = 0.0,
                                 longitude = 0.0,
                                 points = 0,
                                 isCompleted = record.isComplete,
                                 status = status,
-                                questionCount = record.totalQuestions
+                                questionCount = record.totalQuestions,
+                                responseId = record.responseId
                             )
                         )
                     }
@@ -276,3 +302,28 @@ private data class SurveyProgressSnapshot(
 
 private fun Survey.toProgressSnapshot(): SurveyProgressSnapshot =
     SurveyProgressSnapshot(isCompleted = isCompleted, status = status, questionCount = questionCount)
+
+private fun com.qzone.data.network.model.NetworkResponseDetail.toDomain(): SurveyResponseDetail {
+    return SurveyResponseDetail(
+        responseId = responseId.orEmpty(),
+        surveyId = surveyId.orEmpty(),
+        status = status.orEmpty(),
+        answeredQuestions = answeredQuestions ?: 0,
+        totalQuestions = totalQuestions ?: 0,
+        completionRate = completionRate ?: 0.0,
+        responseTime = responseTime,
+        questionAnswers = questionAnswers.orEmpty().map { it.toDomain() }
+    )
+}
+
+private fun com.qzone.data.network.model.NetworkQuestionAnswer.toDomain(): QuestionAnswerResponse {
+    val resolvedType = (type ?: questionType)?.ifBlank { null } ?: "unknown"
+    val resolvedContent = (content ?: questionContent)?.ifBlank { null } ?: "Question"
+    return QuestionAnswerResponse(
+        questionId = documentId,
+        questionContent = resolvedContent,
+        type = resolvedType,
+        selectedOptions = selectedOptions.orEmpty(),
+        textAnswer = textContent
+    )
+}

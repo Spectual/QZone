@@ -47,7 +47,9 @@ import com.qzone.feature.auth.ui.SignInScreen
 import com.qzone.feature.feed.FeedViewModel
 import com.qzone.feature.feed.ui.FeedScreen
 import com.qzone.feature.history.HistoryViewModel
+import com.qzone.feature.history.HistoryDetailViewModel
 import com.qzone.feature.history.ui.HistoryScreen
+import com.qzone.feature.history.ui.HistoryDetailScreen
 import com.qzone.feature.map.ui.NearbySurveyMapScreen
 import com.qzone.feature.map.NearbyMapViewModel
 import com.qzone.feature.profile.ProfileViewModel
@@ -386,14 +388,18 @@ fun QzoneNavHost(
             val mapViewModel: NearbyMapViewModel = viewModel(
                 factory = NearbyMapViewModel.factory(
                     appState.locationRepository,
-                    appState.localSurveyRepository
+                    appState.localSurveyRepository,
+                    appState.surveyRepository
                 )
             )
             val mapState by mapViewModel.uiState.collectAsStateWithLifecycle()
             NearbySurveyMapScreen(
                 state = mapState,
                 onRefresh = mapViewModel::refresh,
-                onLocationPermissionGranted = mapViewModel::onLocationPermissionGranted
+                onLocationPermissionGranted = mapViewModel::onLocationPermissionGranted,
+                onSurveySelected = { surveyId ->
+                    navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
+                }
             )
         }
         composable(
@@ -431,6 +437,22 @@ fun QzoneNavHost(
                     }
                 },
                 onAnswerChanged = surveyViewModel::onAnswerChanged
+            )
+        }
+        composable(
+            route = QzoneDestination.CompletedSurveyDetail.route,
+            arguments = listOf(
+                navArgument(QzoneDestination.CompletedSurveyDetail.surveyIdArg) { type = NavType.StringType },
+                navArgument(QzoneDestination.CompletedSurveyDetail.responseIdArg) { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val responseId = backStackEntry.arguments?.getString(QzoneDestination.CompletedSurveyDetail.responseIdArg).orEmpty()
+            val historyDetailViewModel: HistoryDetailViewModel = viewModel(
+                factory = HistoryDetailViewModel.factory(appState.surveyRepository, responseId)
+            )
+            HistoryDetailScreen(
+                state = historyDetailViewModel.uiState,
+                onBack = { navController.popBackStack() }
             )
         }
         composable(QzoneDestination.Profile.route) {
@@ -512,6 +534,9 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.ProfileSettings.route) {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            val firebaseAuth = remember { FirebaseAuth.getInstance() }
             val profileViewModel: ProfileViewModel = viewModel(
                 factory = ProfileViewModel.factory(
                     appState.userRepository,
@@ -520,6 +545,94 @@ fun QzoneNavHost(
                     appState.surveyRepository
                 )
             )
+            var showPhoneDialog by remember { mutableStateOf(false) }
+            var phoneCountryCode by remember { mutableStateOf("+1") }
+            var phoneInput by remember { mutableStateOf("") }
+            var phoneVerificationCode by remember { mutableStateOf("") }
+            var linkVerificationId by remember { mutableStateOf<String?>(null) }
+            var linkResendToken by remember { mutableStateOf<PhoneAuthProvider.ForceResendingToken?>(null) }
+            var isCodeSent by remember { mutableStateOf(false) }
+            var phoneError by remember { mutableStateOf<String?>(null) }
+            var isPhoneSubmitting by remember { mutableStateOf(false) }
+            var isSendingCode by remember { mutableStateOf(false) }
+            val phoneLinkCallbacks = remember(context) {
+                object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                    override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                        phoneVerificationCode = credential.smsCode.orEmpty()
+                    }
+
+                    override fun onVerificationFailed(e: FirebaseException) {
+                        Log.e("PhoneLink", "Verification failed", e)
+                        isSendingCode = false
+                        phoneError = e.localizedMessage ?: context.getString(R.string.phone_sign_in_failed)
+                    }
+
+                    override fun onCodeSent(
+                        id: String,
+                        token: PhoneAuthProvider.ForceResendingToken
+                    ) {
+                        Log.d("PhoneLink", "Code sent for phone link")
+                        linkVerificationId = id
+                        linkResendToken = token
+                        isCodeSent = true
+                        isSendingCode = false
+                        phoneError = null
+                    }
+                }
+            }
+            fun resetPhoneLinkState() {
+                phoneCountryCode = "+1"
+                phoneInput = ""
+                phoneVerificationCode = ""
+                linkVerificationId = null
+                linkResendToken = null
+                isCodeSent = false
+                phoneError = null
+                isPhoneSubmitting = false
+                isSendingCode = false
+            }
+            val dismissPhoneDialog = {
+                resetPhoneLinkState()
+                showPhoneDialog = false
+            }
+            fun sendPhoneVerification(useResend: Boolean = false) {
+                val trimmedCode = phoneCountryCode.trim()
+                val trimmedNumber = phoneInput.trim()
+                if (trimmedCode.isBlank()) {
+                    phoneError = context.getString(R.string.country_code_required)
+                    return
+                }
+                if (trimmedNumber.isBlank()) {
+                    phoneError = context.getString(R.string.phone_number_required)
+                    return
+                }
+                val normalizedCode = if (trimmedCode.startsWith("+")) trimmedCode else "+$trimmedCode"
+                val normalizedNumber = trimmedNumber.filterNot { it.isWhitespace() }
+                val fullNumber = normalizedCode + normalizedNumber
+                val activity = context as? ComponentActivity
+                if (activity == null) {
+                    phoneError = context.getString(R.string.phone_sign_in_failed)
+                    return
+                }
+                isSendingCode = true
+                phoneError = null
+                val optionsBuilder = PhoneAuthOptions.newBuilder(firebaseAuth)
+                    .setPhoneNumber(fullNumber)
+                    .setTimeout(60L, TimeUnit.SECONDS)
+                    .setActivity(activity)
+                    .setCallbacks(phoneLinkCallbacks)
+                if (useResend) {
+                    linkResendToken?.let { optionsBuilder.setForceResendingToken(it) }
+                }
+                try {
+                    PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build())
+                } catch (t: Throwable) {
+                    if (t is CancellationException) throw t
+                    Log.e("PhoneLink", "Failed to request code", t)
+                    isSendingCode = false
+                    phoneError = t.localizedMessage ?: context.getString(R.string.phone_sign_in_failed)
+                }
+            }
             ProfileSettingsScreen(
                 onBack = { navController.popBackStack() },
                 onEditProfile = { navController.navigate(QzoneDestination.EditProfile.route) },
@@ -533,17 +646,204 @@ fun QzoneNavHost(
                             }
                             launchSingleTop = true
                         }
+                        resetPhoneLinkState()
                     }
-                }
+                },
+                onAddPhoneNumber = { showPhoneDialog = true }
             )
+            if (showPhoneDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        if (!isPhoneSubmitting) {
+                            dismissPhoneDialog()
+                        }
+                    },
+                    title = { Text(text = stringResource(id = R.string.phone_add_title)) },
+                    text = {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.phone_add_description),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = phoneCountryCode,
+                                    onValueChange = {
+                                        phoneCountryCode = it
+                                        phoneError = null
+                                    },
+                                    label = { Text(text = stringResource(id = R.string.country_code_hint)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = phoneInput,
+                                    onValueChange = {
+                                        phoneInput = it
+                                        phoneError = null
+                                    },
+                                    label = { Text(text = stringResource(id = R.string.phone_number_hint)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    singleLine = true,
+                                    modifier = Modifier.weight(2f)
+                                )
+                            }
+                            OutlinedTextField(
+                                value = phoneVerificationCode,
+                                onValueChange = {
+                                    phoneVerificationCode = it
+                                    phoneError = null
+                                },
+                                label = { Text(text = stringResource(id = R.string.sms_code_hint)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                enabled = isCodeSent,
+                                supportingText = {
+                                    if (!isCodeSent) {
+                                        Text(text = stringResource(id = R.string.phone_send_code_first))
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            TextButton(
+                                onClick = { sendPhoneVerification(isCodeSent) },
+                                enabled = !isSendingCode
+                            ) {
+                                if (isSendingCode) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text(
+                                        text = stringResource(
+                                            id = if (isCodeSent) R.string.resend_code else R.string.send_code
+                                        )
+                                    )
+                                }
+                            }
+                            phoneError?.let { error ->
+                                Text(
+                                    text = error,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val trimmedCode = phoneCountryCode.trim()
+                                val trimmedNumber = phoneInput.trim()
+                                if (trimmedCode.isEmpty()) {
+                                    phoneError = context.getString(R.string.country_code_required)
+                                    return@TextButton
+                                }
+                                if (trimmedNumber.isEmpty()) {
+                                    phoneError = context.getString(R.string.phone_number_required)
+                                    return@TextButton
+                                }
+                                if (!isCodeSent) {
+                                    phoneError = context.getString(R.string.phone_send_code_first)
+                                    return@TextButton
+                                }
+                                val verificationId = linkVerificationId
+                                if (verificationId.isNullOrEmpty()) {
+                                    phoneError = context.getString(R.string.phone_sign_in_failed)
+                                    return@TextButton
+                                }
+                                val codeValue = phoneVerificationCode.trim()
+                                if (codeValue.isEmpty()) {
+                                    phoneError = context.getString(R.string.sms_code_required)
+                                    return@TextButton
+                                }
+                                val currentUser = firebaseAuth.currentUser
+                                if (currentUser == null) {
+                                    phoneError = context.getString(R.string.phone_sign_in_failed)
+                                    return@TextButton
+                                }
+                                val normalizedCode = if (trimmedCode.startsWith("+")) trimmedCode else "+$trimmedCode"
+                                val normalizedNumber = trimmedNumber.filterNot { it.isWhitespace() }
+                                val fullNumber = normalizedCode + normalizedNumber
+                                isPhoneSubmitting = true
+                                phoneError = null
+                                coroutineScope.launch {
+                                    try {
+                                        val credential = PhoneAuthProvider.getCredential(verificationId, codeValue)
+                                        currentUser.linkWithCredential(credential).await()
+                                        profileViewModel.linkPhoneNumber(fullNumber) { success, message ->
+                                            isPhoneSubmitting = false
+                                            if (success) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.phone_add_success),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                dismissPhoneDialog()
+                                            } else {
+                                                phoneError = message ?: context.getString(R.string.phone_sign_in_failed)
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        if (e is CancellationException) throw e
+                                        Log.e("PhoneLink", "Failed to link phone", e)
+                                        isPhoneSubmitting = false
+                                        phoneError = e.localizedMessage ?: context.getString(R.string.phone_sign_in_failed)
+                                    }
+                                }
+                            },
+                            enabled = !isPhoneSubmitting
+                        ) {
+                            if (isPhoneSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(text = "Confirm")
+                            }
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                if (!isPhoneSubmitting) {
+                                    dismissPhoneDialog()
+                                }
+                            },
+                            enabled = !isPhoneSubmitting
+                        ) {
+                            Text(text = "Cancel")
+                        }
+                    }
+                )
+            }
         }
         composable(QzoneDestination.History.route) {
+            val context = LocalContext.current
             val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.factory(appState.surveyRepository))
             HistoryScreen(
                 state = historyViewModel.uiState,
                 onQueryChanged = historyViewModel::onQueryChange,
-                onSurveyClick = { surveyId ->
+                onInProgressSurveyClick = { surveyId ->
                     navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
+                },
+                onCompletedSurveyClick = { survey ->
+                    val responseId = survey.responseId
+                    if (responseId.isNullOrBlank()) {
+                        Toast.makeText(context, "No response history available for this survey.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        navController.navigate(
+                            QzoneDestination.CompletedSurveyDetail.createRoute(survey.id, responseId)
+                        )
+                    }
                 },
                 locationRepository = appState.locationRepository
             )

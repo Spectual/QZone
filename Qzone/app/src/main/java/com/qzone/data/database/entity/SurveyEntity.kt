@@ -204,7 +204,7 @@ data class NearbyLocationEntity(
             return NearbyLocationEntity(
                 documentId = location.documentId,
                 title = location.title,
-                description = location.description,
+                description = location.description.orEmpty(),
                 latitude = location.latitude,
                 longitude = location.longitude,
                 distance = location.distance,

@@ -16,6 +16,11 @@ sealed class QzoneDestination(val route: String) {
         const val surveyIdArg = "surveyId"
         fun createRoute(id: String) = "survey/detail/$id"
     }
+    data object CompletedSurveyDetail : QzoneDestination("history/completed/{surveyId}/{responseId}") {
+        const val surveyIdArg = "surveyId"
+        const val responseIdArg = "responseId"
+        fun createRoute(surveyId: String, responseId: String) = "history/completed/$surveyId/$responseId"
+    }
     data object History : QzoneDestination("history")
     data object Rewards : QzoneDestination("rewards")
     data object RewardDetail : QzoneDestination("rewards/detail/{rewardId}") {

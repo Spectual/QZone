@@ -13,6 +13,11 @@ data class ApiResult<T>(
 )
 
 data class LoginRequest(
+    @Json(name = "firebaseToken")
+    val firebaseToken: String
+)
+
+data class PhoneLoginRequest(
     @Json(name = "tokenId")
     val tokenId: String
 )
@@ -24,6 +29,11 @@ data class RegisterRequest(
     val userName: String,
     @Json(name = "email")
     val email: String
+)
+
+data class PhoneBindingRequest(
+    @Json(name = "phone") val phone: String,
+    @Json(name = "firebaseToken") val firebaseToken: String
 )
 
 data class LoginResponse(
@@ -186,7 +196,7 @@ data class UserSurveyHistoryResponse(
 data class UserSurveyRecord(
     @Json(name = "surveyId") val surveyId: String,
     @Json(name = "surveyTitle") val surveyTitle: String,
-    @Json(name = "surveyDescription") val surveyDescription: String,
+    @Json(name = "surveyDescription") val surveyDescription: String? = null,
     @Json(name = "surveyImageUrl") val surveyImageUrl: String?,
     @Json(name = "responseId") val responseId: String?,
     @Json(name = "responseTime") val responseTime: String?,
@@ -195,5 +205,28 @@ data class UserSurveyRecord(
     @Json(name = "completionRate") val completionRate: Double,
     @Json(name = "isComplete") val isComplete: Boolean,
     @Json(name = "status") val status: String
+)
+
+data class NetworkResponseDetail(
+    @Json(name = "responseId") val responseId: String? = null,
+    @Json(name = "surveyId") val surveyId: String? = null,
+    @Json(name = "userId") val userId: String? = null,
+    @Json(name = "status") val status: String? = null,
+    @Json(name = "answeredQuestions") val answeredQuestions: Int? = null,
+    @Json(name = "totalQuestions") val totalQuestions: Int? = null,
+    @Json(name = "completionRate") val completionRate: Double? = null,
+    @Json(name = "responseTime") val responseTime: String? = null,
+    @Json(name = "questionAnswers") val questionAnswers: List<NetworkQuestionAnswer>? = emptyList()
+)
+
+data class NetworkQuestionAnswer(
+    @Json(name = "documentId") val documentId: String,
+    @Json(name = "type") val type: String? = null,
+    @Json(name = "questionType") val questionType: String? = null,
+    @Json(name = "content") val content: String? = null,
+    @Json(name = "questionContent") val questionContent: String? = null,
+    @Json(name = "answered") val answered: Boolean? = null,
+    @Json(name = "selectedOptions") val selectedOptions: List<String>? = null,
+    @Json(name = "textContent") val textContent: String? = null
 )
 

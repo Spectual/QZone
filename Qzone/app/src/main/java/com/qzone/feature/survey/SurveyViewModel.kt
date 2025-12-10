@@ -129,11 +129,20 @@ class SurveyViewModel(
             }
             QLog.d(TAG) { "Submit response success=${response.success} code=${response.code} msg=${response.msg}" }
             if (response.success) {
-                repository.markSurveyCompleted(surveyId)
+                val completionResponseId = response.data?.responseId
+                repository.markSurveyCompleted(surveyId, completionResponseId)
+                runCatching { localSurveyRepository.markSurveyCompleted(surveyId) }
+                    .onFailure { throwable -> QLog.w(TAG) { "Failed to update local survey completion: ${throwable.message}" } }
                 userRepository.recordSurveyCompletion(survey)
                 val earnedPoints = refreshUserPoints()
+                val completedSurvey = survey.copy(
+                    isCompleted = true,
+                    status = SurveyStatus.COMPLETE,
+                    responseId = completionResponseId ?: survey.responseId
+                )
                 _uiState.update {
                     it.copy(
+                        survey = completedSurvey,
                         isSubmitting = false,
                         isComplete = true,
                         validationError = null,

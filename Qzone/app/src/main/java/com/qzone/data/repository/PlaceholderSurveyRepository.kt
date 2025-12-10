@@ -3,6 +3,8 @@ package com.qzone.data.repository
 import android.util.Log
 import com.qzone.data.model.Survey
 import com.qzone.data.model.UserLocation
+import com.qzone.data.model.SurveyResponseDetail
+import com.qzone.data.model.QuestionAnswerResponse
 import com.qzone.data.placeholder.MockSurveyPayload
 import com.qzone.data.placeholder.PlaceholderDataSource
 import com.qzone.domain.repository.SurveyRepository
@@ -38,10 +40,16 @@ class PlaceholderSurveyRepository : SurveyRepository {
         return surveysFlow.value.firstOrNull { it.id == id }
     }
 
-    override suspend fun markSurveyCompleted(id: String) {
+    override suspend fun markSurveyCompleted(id: String, responseId: String?) {
         completedIds.add(id)
         surveysFlow.value = surveysFlow.value.map { survey ->
-            if (survey.id == id) survey.copy(isCompleted = true, status = SurveyStatus.COMPLETE) else survey
+            if (survey.id == id) {
+                survey.copy(
+                    isCompleted = true,
+                    status = SurveyStatus.COMPLETE,
+                    responseId = responseId ?: survey.responseId
+                )
+            } else survey
         }
     }
 
@@ -75,6 +83,30 @@ class PlaceholderSurveyRepository : SurveyRepository {
     override suspend fun clearCachedSurveys() {
         completedIds.clear()
         surveysFlow.value = applyCompletion(PlaceholderDataSource.sampleSurveys())
+    }
+
+    override suspend fun getResponseDetail(responseId: String): SurveyResponseDetail? {
+        delay(200)
+        val sampleSurvey = surveysFlow.value.firstOrNull()
+        return sampleSurvey?.let { survey ->
+            SurveyResponseDetail(
+                responseId = responseId,
+                surveyId = survey.id,
+                status = "COMPLETE",
+                answeredQuestions = survey.questions.size,
+                totalQuestions = survey.questions.size,
+                completionRate = 100.0,
+                questionAnswers = survey.questions.map { q ->
+                QuestionAnswerResponse(
+                    questionId = q.id,
+                    questionContent = q.content,
+                    type = q.type,
+                    selectedOptions = q.options?.map { it.label } ?: emptyList(),
+                    textAnswer = null
+                )
+                }
+            )
+        }
     }
 
     private fun applyCompletion(source: List<Survey>): List<Survey> {

@@ -18,6 +18,8 @@ import com.qzone.data.network.model.RedeemCouponRequest
 import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.data.network.model.UploadUrlResponse
 import com.qzone.data.network.model.UpdateAvatarRequest
+import com.qzone.data.network.model.CouponListRequest
+import com.qzone.data.network.model.CouponListResponse
 import com.qzone.data.network.model.ThirdPartyLoginRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -73,6 +75,9 @@ interface QzoneApiService {
     @POST("/api/coupon/redeem")
     suspend fun redeemCoupon(@Body request: RedeemCouponRequest): ApiResult<Int>
 
+    @POST("/api/coupon/list")
+    suspend fun getUserCoupons(@Body request: CouponListRequest): ApiResult<CouponListResponse>
+
     @POST("/api/survey/upload-url")
     suspend fun getUploadUrl(@Body request: UploadUrlRequest): ApiResult<UploadUrlResponse>
 
@@ -82,4 +87,3 @@ interface QzoneApiService {
     @POST("/api/response/user/surveys")
     suspend fun getUserSurveyHistory(@Body request: com.qzone.data.network.model.UserSurveyHistoryRequest): ApiResult<com.qzone.data.network.model.UserSurveyHistoryResponse>
 }
-

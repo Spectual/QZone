@@ -28,3 +28,11 @@ enum class RedemptionStatus {
     REDEEMED,
     EXPIRED
 }
+
+data class UserCoupon(
+    val id: String,
+    val couponName: String,
+    val deductedPoints: Int,
+    val createdAt: String,
+    val updatedAt: String?
+)

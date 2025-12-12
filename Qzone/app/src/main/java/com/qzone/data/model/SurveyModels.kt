@@ -53,6 +53,20 @@ data class SurveyHistoryItem(
     val locationLabel: String
 ) : Parcelable
 
+data class UserSurveyHistoryItem(
+    val responseId: String,
+    val surveyId: String,
+    val surveyTitle: String,
+    val surveyDescription: String,
+    val surveyImageUrl: String? = null,
+    val answeredQuestions: Int,
+    val totalQuestions: Int,
+    val completionRate: Double,
+    val responseTime: String? = null,
+    val status: SurveyStatus,
+    val isComplete: Boolean
+)
+
 data class SurveyResponseDetail(
     val responseId: String,
     val surveyId: String,
@@ -69,7 +83,14 @@ data class QuestionAnswerResponse(
     val questionContent: String,
     val type: String,
     val selectedOptions: List<String>,
-    val textAnswer: String?
+    val textAnswer: String?,
+    val options: List<QuestionAnswerOption> = emptyList()
+)
+
+data class QuestionAnswerOption(
+    val label: String,
+    val content: String,
+    val isSelected: Boolean
 )
 
 @Parcelize

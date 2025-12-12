@@ -2,6 +2,7 @@ package com.qzone.domain.repository
 
 import com.qzone.data.model.Survey
 import com.qzone.data.model.UserLocation
+import com.qzone.data.model.UserSurveyHistoryItem
 import kotlinx.coroutines.flow.Flow
 
 interface SurveyRepository {
@@ -12,6 +13,7 @@ interface SurveyRepository {
     
     fun getCompletedSurveys(): Flow<List<Survey>>
     fun getUncompletedSurveys(): Flow<List<Survey>>
+    fun getUserSurveyHistory(): Flow<List<UserSurveyHistoryItem>>
     suspend fun saveSurveyProgress(survey: Survey)
     suspend fun refreshSurveyHistory()
     suspend fun clearCachedSurveys()

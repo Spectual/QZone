@@ -53,6 +53,7 @@ import com.qzone.feature.history.ui.HistoryDetailScreen
 import com.qzone.feature.map.ui.NearbySurveyMapScreen
 import com.qzone.feature.map.NearbyMapViewModel
 import com.qzone.feature.profile.ProfileViewModel
+import com.qzone.feature.profile.WalletViewModel
 import com.qzone.feature.profile.ui.EditProfileScreen
 import com.qzone.feature.profile.ui.ProfileScreen
 import com.qzone.feature.profile.ui.ProfileSettingsScreen
@@ -447,8 +448,9 @@ fun QzoneNavHost(
             )
         ) { backStackEntry ->
             val responseId = backStackEntry.arguments?.getString(QzoneDestination.CompletedSurveyDetail.responseIdArg).orEmpty()
+            val surveyIdArg = backStackEntry.arguments?.getString(QzoneDestination.CompletedSurveyDetail.surveyIdArg)
             val historyDetailViewModel: HistoryDetailViewModel = viewModel(
-                factory = HistoryDetailViewModel.factory(appState.surveyRepository, responseId)
+                factory = HistoryDetailViewModel.factory(appState.surveyRepository, responseId, surveyIdArg)
             )
             HistoryDetailScreen(
                 state = historyDetailViewModel.uiState,
@@ -494,21 +496,13 @@ fun QzoneNavHost(
             )
         }
         composable(QzoneDestination.Wallet.route) {
-            val parentEntry = remember(it) {
-                navController.getBackStackEntry(QzoneDestination.Profile.route)
-            }
-            val profileViewModel: ProfileViewModel = viewModel(
-                viewModelStoreOwner = parentEntry,
-                factory = ProfileViewModel.factory(
-                    appState.userRepository,
-                    appState.rewardRepository,
-                    appState.localSurveyRepository,
-                    appState.surveyRepository
-                )
+            val walletViewModel: WalletViewModel = viewModel(
+                factory = WalletViewModel.factory(appState.rewardRepository)
             )
             WalletScreen(
-                state = profileViewModel.uiState,
-                onBack = { navController.popBackStack() }
+                state = walletViewModel.uiState,
+                onBack = { navController.popBackStack() },
+                onRetry = walletViewModel::refresh
             )
         }
         composable(QzoneDestination.EditProfile.route) {
@@ -832,20 +826,19 @@ fun QzoneNavHost(
             HistoryScreen(
                 state = historyViewModel.uiState,
                 onQueryChanged = historyViewModel::onQueryChange,
-                onInProgressSurveyClick = { surveyId ->
-                    navController.navigate(QzoneDestination.SurveyDetail.createRoute(surveyId))
+                onInProgressSurveyClick = { record ->
+                    navController.navigate(QzoneDestination.SurveyDetail.createRoute(record.surveyId))
                 },
-                onCompletedSurveyClick = { survey ->
-                    val responseId = survey.responseId
-                    if (responseId.isNullOrBlank()) {
+                onCompletedSurveyClick = { record ->
+                    val responseId = record.responseId
+                    if (responseId.isBlank()) {
                         Toast.makeText(context, "No response history available for this survey.", Toast.LENGTH_SHORT).show()
                     } else {
                         navController.navigate(
-                            QzoneDestination.CompletedSurveyDetail.createRoute(survey.id, responseId)
+                            QzoneDestination.CompletedSurveyDetail.createRoute(record.surveyId, responseId)
                         )
                     }
-                },
-                locationRepository = appState.locationRepository
+                }
             )
         }
         composable(QzoneDestination.Rewards.route) {

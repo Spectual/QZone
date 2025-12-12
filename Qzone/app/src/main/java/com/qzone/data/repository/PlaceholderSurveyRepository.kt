@@ -5,6 +5,7 @@ import com.qzone.data.model.Survey
 import com.qzone.data.model.UserLocation
 import com.qzone.data.model.SurveyResponseDetail
 import com.qzone.data.model.QuestionAnswerResponse
+import com.qzone.data.model.UserSurveyHistoryItem
 import com.qzone.data.placeholder.MockSurveyPayload
 import com.qzone.data.placeholder.PlaceholderDataSource
 import com.qzone.domain.repository.SurveyRepository
@@ -22,6 +23,23 @@ class PlaceholderSurveyRepository : SurveyRepository {
 
     private val completedIds = mutableSetOf<String>()
     private val surveysFlow = MutableStateFlow(applyCompletion(PlaceholderDataSource.sampleSurveys()))
+    private val userHistoryFlow = MutableStateFlow(
+        listOf(
+            UserSurveyHistoryItem(
+                responseId = "response_mock_1",
+                surveyId = "survey_campus_dining",
+                surveyTitle = "Campus Dining Satisfaction",
+                surveyDescription = "Help us understand dining hall preferences.",
+                surveyImageUrl = null,
+                answeredQuestions = 5,
+                totalQuestions = 5,
+                completionRate = 100.0,
+                responseTime = "2024-01-15 10:30:00",
+                status = SurveyStatus.COMPLETE,
+                isComplete = true
+            )
+        )
+    )
 
     init {
         logMockSurveyJson()
@@ -60,6 +78,8 @@ class PlaceholderSurveyRepository : SurveyRepository {
     override fun getUncompletedSurveys(): Flow<List<Survey>> {
         return surveysFlow.map { list -> list.filter { !it.isCompleted } }
     }
+
+    override fun getUserSurveyHistory(): Flow<List<UserSurveyHistoryItem>> = userHistoryFlow.asStateFlow()
 
     override suspend fun saveSurveyProgress(survey: Survey) {
         surveysFlow.value = surveysFlow.value.map {
@@ -102,7 +122,14 @@ class PlaceholderSurveyRepository : SurveyRepository {
                     questionContent = q.content,
                     type = q.type,
                     selectedOptions = q.options?.map { it.label } ?: emptyList(),
-                    textAnswer = null
+                    textAnswer = null,
+                    options = q.options?.map { option ->
+                        com.qzone.data.model.QuestionAnswerOption(
+                            label = option.label,
+                            content = option.content,
+                            isSelected = true
+                        )
+                    } ?: emptyList()
                 )
                 }
             )

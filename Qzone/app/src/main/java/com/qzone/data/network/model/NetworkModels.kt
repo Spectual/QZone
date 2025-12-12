@@ -101,7 +101,8 @@ data class NetworkSurveyDetail(
             longitude = longitude ?: fallback.longitude,
             points = points ?: fallback.points,
             questions = questionList,
-            questionCount = questionNumber ?: if (questionList.isNotEmpty()) questionList.size else fallback.questionCount
+            questionCount = questionNumber ?: if (questionList.isNotEmpty()) questionList.size else fallback.questionCount,
+            answers = existingSurvey?.answers ?: fallback.answers
         )
     }
 }
@@ -159,6 +160,26 @@ data class NetworkUserProfile(
 data class RedeemCouponRequest(
     @Json(name = "requiredPoints") val requiredPoints: Int,
     @Json(name = "couponName") val couponName: String
+)
+
+data class CouponListRequest(
+    @Json(name = "userId") val userId: String? = null,
+    @Json(name = "page") val page: Int = 1,
+    @Json(name = "pageSize") val pageSize: Int = 10
+)
+
+data class CouponListResponse(
+    @Json(name = "total") val total: Int,
+    @Json(name = "records") val records: List<NetworkCouponRecord>
+)
+
+data class NetworkCouponRecord(
+    @Json(name = "documentId") val documentId: String,
+    @Json(name = "userId") val userId: String?,
+    @Json(name = "couponName") val couponName: String,
+    @Json(name = "deductedPoints") val deductedPoints: Int,
+    @Json(name = "createTime") val createTime: String,
+    @Json(name = "updateTime") val updateTime: String?
 )
 
 data class UploadUrlRequest(
@@ -229,4 +250,3 @@ data class NetworkQuestionAnswer(
     @Json(name = "selectedOptions") val selectedOptions: List<String>? = null,
     @Json(name = "textContent") val textContent: String? = null
 )
-

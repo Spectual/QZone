@@ -194,9 +194,27 @@ fun NearbySurveyMapScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .align(Alignment.Center)
+                    } else if (state.nearbyLocations.isEmpty()) {
+                        Text(
+                            text = stringResource(id = R.string.map_no_results),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp)
                         )
                     }
                 }
+            }
+            if (state.nearbyLocations.isNotEmpty()) {
+                Text(
+                    text = stringResource(
+                        id = R.string.map_result_count,
+                        state.nearbyLocations.size
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

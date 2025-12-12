@@ -62,6 +62,7 @@ class NearbyMapViewModel(
                 val completionMap = surveys.associate { it.id to it.isCompleted }
                 surveyCompletionState.value = completionMap
                 refreshVisibleLocations()
+                _uiState.update { it.copy(nearbyLocations = cached) }
             }
         }
     }

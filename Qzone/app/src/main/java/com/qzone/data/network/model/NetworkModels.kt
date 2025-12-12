@@ -13,8 +13,8 @@ data class ApiResult<T>(
 )
 
 data class LoginRequest(
-    @Json(name = "firebaseToken")
-    val firebaseToken: String
+    @Json(name = "tokenId")
+    val tokenId: String
 )
 
 data class PhoneLoginRequest(

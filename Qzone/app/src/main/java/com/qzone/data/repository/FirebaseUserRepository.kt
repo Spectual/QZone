@@ -18,6 +18,8 @@ import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
 import com.qzone.data.network.model.NetworkUserProfile
 import com.qzone.data.network.model.RegisterRequest
+import com.qzone.data.network.model.PhoneBindingRequest
+import com.qzone.data.network.model.PhoneLoginRequest
 import com.qzone.data.network.model.ThirdPartyLoginRequest
 import com.qzone.data.network.model.UpdateAvatarRequest
 import com.qzone.data.network.model.UploadUrlRequest
@@ -171,6 +173,37 @@ class FirebaseUserRepository(
         }
     }
 
+    override suspend fun linkPhoneNumber(phone: String): AuthResult {
+        val normalized = phone.filterNot { it.isWhitespace() }
+        if (normalized.isBlank()) {
+            return AuthResult(success = false, errorMessage = "Please enter a valid phone number.")
+        }
+        val firebaseUser = auth.currentUser
+            ?: return AuthResult(success = false, errorMessage = "You must be signed in to link a phone.")
+        val tokenResult = runCatching { firebaseUser.getIdToken(true).await() }.getOrElse { throwable ->
+            if (throwable is CancellationException) throw throwable
+            return AuthResult(success = false, errorMessage = throwable.toReadableMessage())
+        }
+        val firebaseToken = tokenResult.token
+            ?: return AuthResult(success = false, errorMessage = "Failed to get Firebase token.")
+        return runCatching {
+            val response = apiService.addPhoneNumber(
+                PhoneBindingRequest(
+                    phone = normalized,
+                    firebaseToken = firebaseToken
+                )
+            )
+            if (response.success) {
+                AuthResult(success = true)
+            } else {
+                AuthResult(success = false, errorMessage = response.msg ?: "Failed to link phone number")
+            }
+        }.getOrElse { throwable ->
+            if (throwable is CancellationException) throw throwable
+            AuthResult(success = false, errorMessage = throwable.toReadableMessage())
+        }
+    }
+
     override suspend fun refreshUserProfile(): Boolean {
         return fetchAndCacheUserProfile()
     }
@@ -186,7 +219,6 @@ class FirebaseUserRepository(
             locationLabel = survey.title
         )
         val updated = current.copy(
-            totalPoints = current.totalPoints + survey.points,
             history = listOf(newHistory) + current.history
         )
         delay(200)
@@ -337,8 +369,8 @@ class FirebaseUserRepository(
         val response = runCatching {
             when (mode) {
                 FirebaseLoginMode.THIRD_PARTY -> apiService.loginThirdParty(ThirdPartyLoginRequest(tokenId = idToken))
-                FirebaseLoginMode.PHONE -> apiService.loginPhone(LoginRequest(idToken))
-                FirebaseLoginMode.EMAIL_PASSWORD -> apiService.login(LoginRequest(idToken))
+                FirebaseLoginMode.PHONE -> apiService.loginPhone(PhoneLoginRequest(tokenId = idToken))
+                FirebaseLoginMode.EMAIL_PASSWORD -> apiService.login(LoginRequest(firebaseToken = idToken))
             }
         }.getOrElse { throwable ->
             if (throwable is CancellationException) throw throwable
@@ -484,4 +516,3 @@ class FirebaseUserRepository(
         }
     }
 }
-

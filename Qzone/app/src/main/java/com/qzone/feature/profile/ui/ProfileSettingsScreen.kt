@@ -50,7 +50,8 @@ fun ProfileSettingsScreen(
     onEditProfile: () -> Unit,
     isDarkTheme: Boolean,
     onToggleDarkMode: (Boolean) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onAddPhoneNumber: () -> Unit
 ) {
     Scaffold(
         containerColor = Color.Transparent,
@@ -108,7 +109,7 @@ fun ProfileSettingsScreen(
                             icon = Icons.Filled.Phone,
                             title = "Add phone number",
                             subtitle = "Link a phone number for SMS login and account recovery",
-                            onClick = null
+                            onClick = onAddPhoneNumber
                         )
                         SettingsRow(
                             icon = Icons.Filled.Security,

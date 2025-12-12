@@ -6,6 +6,8 @@ import com.qzone.data.network.model.NearbyLocationRequest
 import com.qzone.data.network.model.LoginRequest
 import com.qzone.data.network.model.LoginResponse
 import com.qzone.data.network.model.RegisterRequest
+import com.qzone.data.network.model.PhoneBindingRequest
+import com.qzone.data.network.model.PhoneLoginRequest
 import com.qzone.data.network.model.SubmitAnswerItem
 import com.qzone.data.network.model.SubmitResponseResult
 import com.qzone.data.network.model.NetworkSurveyDetail
@@ -16,10 +18,13 @@ import com.qzone.data.network.model.RedeemCouponRequest
 import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.data.network.model.UploadUrlResponse
 import com.qzone.data.network.model.UpdateAvatarRequest
+import com.qzone.data.network.model.CouponListRequest
+import com.qzone.data.network.model.CouponListResponse
 import com.qzone.data.network.model.ThirdPartyLoginRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -29,7 +34,10 @@ interface QzoneApiService {
     suspend fun login(@Body request: LoginRequest): ApiResult<LoginResponse>
 
     @POST("/api/user/phone-login")
-    suspend fun loginPhone(@Body request: LoginRequest): ApiResult<LoginResponse>
+    suspend fun loginPhone(@Body request: PhoneLoginRequest): ApiResult<LoginResponse>
+
+    @PUT("/api/user/phone")
+    suspend fun addPhoneNumber(@Body request: PhoneBindingRequest): ApiResult<String>
 
     @POST("/api/user/third-party")
     suspend fun loginThirdParty(@Body request: ThirdPartyLoginRequest): ApiResult<LoginResponse>
@@ -39,6 +47,9 @@ interface QzoneApiService {
 
     @POST("/api/response/")
     suspend fun submitResponses(@Body body: List<SubmitAnswerItem>): ApiResult<SubmitResponseResult>
+
+    @POST("/api/response/detail/{id}")
+    suspend fun getResponseDetail(@Path("id") id: String): ApiResult<com.qzone.data.network.model.NetworkResponseDetail>
 
     @GET("/api/location/nearby")
     suspend fun getNearbyLocations(
@@ -65,6 +76,9 @@ interface QzoneApiService {
     @POST("/api/coupon/redeem")
     suspend fun redeemCoupon(@Body request: RedeemCouponRequest): ApiResult<Int>
 
+    @POST("/api/coupon/list")
+    suspend fun getUserCoupons(@Body request: CouponListRequest): ApiResult<CouponListResponse>
+
     @POST("/api/survey/upload-url")
     suspend fun getUploadUrl(@Body request: UploadUrlRequest): ApiResult<UploadUrlResponse>
 
@@ -74,4 +88,3 @@ interface QzoneApiService {
     @POST("/api/response/user/surveys")
     suspend fun getUserSurveyHistory(@Body request: com.qzone.data.network.model.UserSurveyHistoryRequest): ApiResult<com.qzone.data.network.model.UserSurveyHistoryResponse>
 }
-

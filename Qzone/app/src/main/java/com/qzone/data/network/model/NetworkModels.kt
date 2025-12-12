@@ -17,6 +17,11 @@ data class LoginRequest(
     val tokenId: String
 )
 
+data class PhoneLoginRequest(
+    @Json(name = "tokenId")
+    val tokenId: String
+)
+
 data class RegisterRequest(
     @Json(name = "firebaseToken")
     val firebaseToken: String,
@@ -24,6 +29,11 @@ data class RegisterRequest(
     val userName: String,
     @Json(name = "email")
     val email: String
+)
+
+data class PhoneBindingRequest(
+    @Json(name = "phone") val phone: String,
+    @Json(name = "firebaseToken") val firebaseToken: String
 )
 
 data class LoginResponse(
@@ -50,7 +60,8 @@ data class SubmitResponseResult(
     @Json(name = "answeredQuestions") val answeredQuestions: Int = 0,
     @Json(name = "totalQuestions") val totalQuestions: Int = 0,
     @Json(name = "completionRate") val completionRate: Double = 0.0,
-    @Json(name = "isFirstComplete") val isFirstComplete: Boolean = false
+    @Json(name = "isFirstComplete") val isFirstComplete: Boolean = false,
+    @Json(name = "earnedPoints") val earnedPoints: Int? = null
 )
 
 // Nearby location query body (POST fallback)
@@ -64,6 +75,7 @@ data class NetworkSurveyDetail(
     @Json(name = "documentId") val documentId: String,
     @Json(name = "title") val title: String,
     @Json(name = "description") val description: String? = null,
+    @Json(name = "imageUrl") val imageUrl: String? = null,
     @Json(name = "latitude") val latitude: Double? = null,
     @Json(name = "longitude") val longitude: Double? = null,
     @Json(name = "points") val points: Int? = null,
@@ -76,6 +88,7 @@ data class NetworkSurveyDetail(
             id = documentId,
             title = title,
             description = description.orEmpty(),
+            imageUrl = imageUrl,
             latitude = latitude ?: 0.0,
             longitude = longitude ?: 0.0,
             points = points ?: 0,
@@ -87,11 +100,13 @@ data class NetworkSurveyDetail(
         return fallback.copy(
             title = title.ifBlank { fallback.title },
             description = description ?: fallback.description,
+            imageUrl = imageUrl ?: fallback.imageUrl,
             latitude = latitude ?: fallback.latitude,
             longitude = longitude ?: fallback.longitude,
             points = points ?: fallback.points,
             questions = questionList,
-            questionCount = questionNumber ?: if (questionList.isNotEmpty()) questionList.size else fallback.questionCount
+            questionCount = questionNumber ?: if (questionList.isNotEmpty()) questionList.size else fallback.questionCount,
+            answers = existingSurvey?.answers ?: fallback.answers
         )
     }
 }
@@ -151,6 +166,26 @@ data class RedeemCouponRequest(
     @Json(name = "couponName") val couponName: String
 )
 
+data class CouponListRequest(
+    @Json(name = "userId") val userId: String? = null,
+    @Json(name = "page") val page: Int = 1,
+    @Json(name = "pageSize") val pageSize: Int = 10
+)
+
+data class CouponListResponse(
+    @Json(name = "total") val total: Int,
+    @Json(name = "records") val records: List<NetworkCouponRecord>
+)
+
+data class NetworkCouponRecord(
+    @Json(name = "documentId") val documentId: String,
+    @Json(name = "userId") val userId: String?,
+    @Json(name = "couponName") val couponName: String,
+    @Json(name = "deductedPoints") val deductedPoints: Int,
+    @Json(name = "createTime") val createTime: String,
+    @Json(name = "updateTime") val updateTime: String?
+)
+
 data class UploadUrlRequest(
     @Json(name = "filename") val filename: String,
     @Json(name = "contentType") val contentType: String,
@@ -186,7 +221,7 @@ data class UserSurveyHistoryResponse(
 data class UserSurveyRecord(
     @Json(name = "surveyId") val surveyId: String,
     @Json(name = "surveyTitle") val surveyTitle: String,
-    @Json(name = "surveyDescription") val surveyDescription: String,
+    @Json(name = "surveyDescription") val surveyDescription: String? = null,
     @Json(name = "surveyImageUrl") val surveyImageUrl: String?,
     @Json(name = "responseId") val responseId: String?,
     @Json(name = "responseTime") val responseTime: String?,
@@ -197,3 +232,25 @@ data class UserSurveyRecord(
     @Json(name = "status") val status: String
 )
 
+data class NetworkResponseDetail(
+    @Json(name = "responseId") val responseId: String? = null,
+    @Json(name = "surveyId") val surveyId: String? = null,
+    @Json(name = "userId") val userId: String? = null,
+    @Json(name = "status") val status: String? = null,
+    @Json(name = "answeredQuestions") val answeredQuestions: Int? = null,
+    @Json(name = "totalQuestions") val totalQuestions: Int? = null,
+    @Json(name = "completionRate") val completionRate: Double? = null,
+    @Json(name = "responseTime") val responseTime: String? = null,
+    @Json(name = "questionAnswers") val questionAnswers: List<NetworkQuestionAnswer>? = emptyList()
+)
+
+data class NetworkQuestionAnswer(
+    @Json(name = "documentId") val documentId: String,
+    @Json(name = "type") val type: String? = null,
+    @Json(name = "questionType") val questionType: String? = null,
+    @Json(name = "content") val content: String? = null,
+    @Json(name = "questionContent") val questionContent: String? = null,
+    @Json(name = "answered") val answered: Boolean? = null,
+    @Json(name = "selectedOptions") val selectedOptions: List<String>? = null,
+    @Json(name = "textContent") val textContent: String? = null
+)

@@ -3,21 +3,22 @@ package com.qzone.feature.survey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.qzone.util.QLog
 import com.qzone.data.model.Survey
 import com.qzone.data.model.SurveyQuestion
+import com.qzone.data.model.SurveyResponseDetail
 import com.qzone.data.model.SurveyStatus
+import com.qzone.data.network.QzoneApiClient
+import com.qzone.data.network.model.SubmitAnswerItem
 import com.qzone.data.repository.LocalSurveyRepository
 import com.qzone.domain.repository.SurveyRepository
 import com.qzone.domain.repository.UserRepository
-import com.qzone.data.network.QzoneApiClient
-import com.qzone.data.network.model.SubmitAnswerItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.qzone.util.QLog
 
 
 data class SurveyUiState(
@@ -50,6 +51,7 @@ class SurveyViewModel(
     private val _uiState = MutableStateFlow(SurveyUiState())
     val uiState: StateFlow<SurveyUiState> = _uiState.asStateFlow()
     private var lastKnownUserPoints: Int = 0
+    private val attemptedResponseRestores = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
@@ -58,9 +60,23 @@ class SurveyViewModel(
             }
         }
         viewModelScope.launch {
+            runCatching { localSurveyRepository.getSurveyById(surveyId) }
+                .onFailure { throwable ->
+                    QLog.w(TAG) { "Failed to load local survey cache: ${throwable.message}" }
+                }
+                .getOrNull()
+                ?.let { cached ->
+                    QLog.d(TAG) { "Loaded local survey cache id=${cached.id} answers=${cached.answers.size}" }
+                    applySurveyState(cached)
+                }
+        }
+        viewModelScope.launch {
             val survey = repository.getSurveyById(surveyId)
-            _uiState.update { it.copy(survey = survey) }
-            survey?.let {
+            val resolvedSurvey = survey?.let { applySurveyState(it) }
+            if (survey == null) {
+                _uiState.update { it.copy(survey = null, answers = emptyMap()) }
+            }
+            resolvedSurvey?.let {
                 runCatching {
                     localSurveyRepository.saveSurvey(it)
                 }.onFailure { throwable ->
@@ -129,15 +145,33 @@ class SurveyViewModel(
             }
             QLog.d(TAG) { "Submit response success=${response.success} code=${response.code} msg=${response.msg}" }
             if (response.success) {
-                repository.markSurveyCompleted(surveyId)
-                userRepository.recordSurveyCompletion(survey)
-                val earnedPoints = refreshUserPoints()
+                val completionResponseId = response.data?.responseId
+                val serverEarnedPoints = response.data?.earnedPoints
+                val earnedDelta = when {
+                    serverEarnedPoints != null -> {
+                        applyEarnedPointsDelta(serverEarnedPoints)
+                        serverEarnedPoints
+                    }
+                    else -> refreshUserPoints()
+                }
+                repository.markSurveyCompleted(surveyId, completionResponseId)
+                runCatching { localSurveyRepository.markSurveyCompleted(surveyId) }
+                    .onFailure { throwable -> QLog.w(TAG) { "Failed to update local survey completion: ${throwable.message}" } }
+                val resolvedPoints = earnedDelta ?: survey.points
+                val completedSurvey = survey.copy(
+                    points = resolvedPoints,
+                    isCompleted = true,
+                    status = SurveyStatus.COMPLETE,
+                    responseId = completionResponseId ?: survey.responseId
+                )
+                userRepository.recordSurveyCompletion(completedSurvey)
                 _uiState.update {
                     it.copy(
+                        survey = completedSurvey,
                         isSubmitting = false,
                         isComplete = true,
                         validationError = null,
-                        earnedPoints = earnedPoints ?: survey.points
+                        earnedPoints = resolvedPoints
                     )
                 }
             } else {
@@ -165,12 +199,14 @@ class SurveyViewModel(
             try {
                 val response = QzoneApiClient.service.submitResponses(items)
                 if (response.success) {
+                    val responseId = response.data?.responseId ?: survey.responseId
                     val questionCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
                     val updated = survey.copy(
                         answers = answersMap,
                         status = SurveyStatus.IN_PROGRESS,
                         isCompleted = false,
-                        questionCount = questionCount
+                        questionCount = questionCount,
+                        responseId = responseId
                     )
                     try {
                         repository.saveSurveyProgress(updated)
@@ -266,6 +302,135 @@ class SurveyViewModel(
                     return SurveyViewModel(repository, userRepository, surveyId, localSurveyRepository) as T
                 }
             }
+    }
+
+    private suspend fun applyEarnedPointsDelta(delta: Int) {
+        if (delta <= 0) return
+        val updatedTotal = (lastKnownUserPoints + delta).coerceAtLeast(0)
+        lastKnownUserPoints = updatedTotal
+        runCatching { userRepository.updatePoints(updatedTotal) }
+            .onFailure { throwable ->
+                QLog.w(TAG) { "Failed to apply earned points delta: ${throwable.message}" }
+            }
+    }
+
+    private fun applySurveyState(incoming: Survey): Survey {
+        val existingAnswers = _uiState.value.answers
+        val restoredAnswers = when {
+            incoming.answers.isNotEmpty() -> incoming.answers
+            existingAnswers.isNotEmpty() -> existingAnswers
+            else -> emptyMap()
+        }
+        val questionCount = incoming.questions.size.takeIf { it > 0 } ?: incoming.questionCount
+        val resolvedIndex = computeResumeIndex(incoming, restoredAnswers, questionCount)
+        val resolvedSurvey = incoming.copy(
+            answers = restoredAnswers,
+            currentQuestionIndex = resolvedIndex
+        )
+        _uiState.update {
+            it.copy(
+                survey = resolvedSurvey,
+                answers = restoredAnswers,
+                currentQuestionIndex = resolvedIndex
+            )
+        }
+        if (restoredAnswers.isEmpty()) {
+            maybeRestoreAnswersFromResponse(resolvedSurvey)
+        }
+        return resolvedSurvey
+    }
+
+    private fun computeResumeIndex(
+        survey: Survey,
+        answers: Map<String, List<String>>,
+        questionCount: Int
+    ): Int {
+        if (questionCount <= 0) return 0
+        if (answers.isEmpty()) {
+            return survey.currentQuestionIndex.coerceIn(0, questionCount - 1)
+        }
+        val firstUnanswered = survey.questions.indexOfFirst { question ->
+            !question.isAnswered(answers[question.id])
+        }
+        return if (firstUnanswered >= 0) firstUnanswered else {
+            (survey.questions.lastIndex).coerceAtLeast(0)
+        }
+    }
+
+    private fun maybeRestoreAnswersFromResponse(survey: Survey) {
+        val responseId = survey.responseId?.takeIf { it.isNotBlank() } ?: return
+        if (survey.questions.isEmpty()) {
+            return
+        }
+        if (!attemptedResponseRestores.add(responseId)) {
+            return
+        }
+        viewModelScope.launch {
+            val detail = runCatching { repository.getResponseDetail(responseId) }
+                .onFailure { throwable ->
+                    QLog.w(TAG) { "Failed to fetch response detail for $responseId: ${throwable.message}" }
+                }
+                .getOrNull()
+            if (detail == null) {
+                attemptedResponseRestores.remove(responseId)
+                return@launch
+            }
+            val currentSurvey = _uiState.value.survey ?: survey
+            val restoredAnswers = mapDetailAnswers(detail, currentSurvey)
+            if (restoredAnswers.isEmpty()) {
+                attemptedResponseRestores.remove(responseId)
+                return@launch
+            }
+            applySurveyState(currentSurvey.copy(answers = restoredAnswers))
+            try {
+                localSurveyRepository.saveSurvey(currentSurvey.copy(answers = restoredAnswers))
+            } catch (throwable: Throwable) {
+                QLog.w(TAG) { "Failed to persist restored answers: ${throwable.message}" }
+            }
+        }
+    }
+
+    private fun mapDetailAnswers(
+        detail: SurveyResponseDetail,
+        survey: Survey
+    ): Map<String, List<String>> {
+        if (survey.questions.isEmpty()) return emptyMap()
+        val questionMap = survey.questions.associateBy { it.id }
+        val restored = mutableMapOf<String, List<String>>()
+        detail.questionAnswers.forEach { answer ->
+            val question = questionMap[answer.questionId] ?: return@forEach
+            when (question.type.lowercase()) {
+                "text" -> {
+                    answer.textAnswer
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { restored[question.id] = listOf(it) }
+                }
+                "multiple" -> {
+                    val selections = answer.selectedOptions.mapNotNull { selected ->
+                        matchOptionValue(question, selected)
+                    }
+                    if (selections.isNotEmpty()) {
+                        restored[question.id] = selections
+                    }
+                }
+                else -> {
+                    val selection = answer.selectedOptions.firstOrNull()?.let { selected ->
+                        matchOptionValue(question, selected)
+                    }
+                    selection?.let { restored[question.id] = listOf(it) }
+                }
+            }
+        }
+        return restored
+    }
+
+    private fun matchOptionValue(question: SurveyQuestion, rawValue: String?): String? {
+        val value = rawValue?.takeIf { it.isNotBlank() } ?: return null
+        val options = question.options.orEmpty()
+        val matched = options.firstOrNull {
+            it.label.equals(value, ignoreCase = true) || it.content.equals(value, ignoreCase = true)
+        }
+        return matched?.content ?: value
     }
 }
 

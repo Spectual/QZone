@@ -2,8 +2,11 @@ package com.qzone.data.repository
 
 import android.util.Log
 import com.qzone.data.model.Reward
+import com.qzone.data.model.UserCoupon
 import com.qzone.data.network.QzoneApiClient
 import com.qzone.data.network.model.RedeemCouponRequest
+import com.qzone.data.network.model.CouponListRequest
+import com.qzone.data.network.model.NetworkCouponRecord
 import com.qzone.data.placeholder.PlaceholderDataSource
 import com.qzone.domain.repository.RewardRepository
 import com.qzone.domain.repository.RewardRepository.InsufficientPointsException
@@ -50,6 +53,32 @@ class PlaceholderRewardRepository(
             throw t
         }
     }
+
+    override suspend fun getUserCoupons(page: Int, pageSize: Int): List<UserCoupon> {
+        return try {
+            val response = apiService.getUserCoupons(
+                CouponListRequest(page = page, pageSize = pageSize)
+            )
+            if (response.success && response.data != null) {
+                response.data.records.map { it.toDomain() }
+            } else {
+                Log.w(TAG, "Coupon list request failed: ${response.msg}")
+                emptyList()
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to load coupon history", t)
+            emptyList()
+        }
+    }
+
+    private fun NetworkCouponRecord.toDomain(): UserCoupon =
+        UserCoupon(
+            id = documentId,
+            couponName = couponName,
+            deductedPoints = deductedPoints,
+            createdAt = createTime,
+            updatedAt = updateTime
+        )
 
     companion object {
         private const val TAG = "RewardRepository"

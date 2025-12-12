@@ -110,8 +110,8 @@ fun FeedScreen(
             .fillMaxSize()
             .qzoneScreenBackground()
             .padding(horizontal = 24.dp)
-            .padding(top = topPadding + 28.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(top = topPadding + 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(text = "Nearby Surveys", style = MaterialTheme.typography.headlineSmall)
         if (!uiState.hasLocationPermission) {
@@ -162,11 +162,11 @@ fun FeedScreen(
             }
         }
 
+        val listModifier = Modifier.weight(1f, fill = true)
+
         if (uiState.surveys.isEmpty()) {
             QzoneElevatedSurface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f, fill = true)
+                modifier = listModifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
@@ -192,7 +192,7 @@ fun FeedScreen(
         } else {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.weight(1f),
+                modifier = listModifier,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 items(uiState.surveys, key = { it.id }) { survey ->
@@ -219,19 +219,15 @@ fun FeedScreen(
         }
         
         // Display a small hint for shake-to-refresh
-        if (uiState.surveys.isNotEmpty()) {
-            Row(
-               modifier = Modifier.fillMaxWidth(),
-               horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Shake device to refresh",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-        }
+        Text(
+            text = "Shake device to refresh",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            textAlign = TextAlign.Center
+        )
     }
 }
 

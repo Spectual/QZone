@@ -21,11 +21,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.qzone.data.model.Survey
 import com.qzone.domain.repository.LocationRepository
+import coil.compose.AsyncImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SurveyCard(
@@ -35,17 +39,25 @@ fun SurveyCard(
     locationRepository: LocationRepository? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    var locationAddress by remember(survey.id, survey.latitude, survey.longitude) { 
-        mutableStateOf<String?>(null) 
+    var locationAddress by remember(survey.id) {
+        mutableStateOf(
+            locationAddressCache[survey.id]
+        )
     }
     
     // Fetch address from coordinates
     LaunchedEffect(survey.id, survey.latitude, survey.longitude) {
-        if (locationRepository != null) {
-            locationAddress = locationRepository.getAddressFromCoordinates(
-                survey.latitude,
-                survey.longitude
-            )
+        if (locationRepository != null && locationAddress.isNullOrEmpty()) {
+            val fetched = withContext(Dispatchers.IO) {
+                locationRepository.getAddressFromCoordinates(
+                    survey.latitude,
+                    survey.longitude
+                )
+            }
+            if (!fetched.isNullOrEmpty()) {
+                locationAddress = fetched
+                locationAddressCache[survey.id] = fetched
+            }
         }
     }
     val isDark = colorScheme.background.luminance() < 0.2f
@@ -55,119 +67,168 @@ fun SurveyCard(
         listOf(Color(0xFFFFFFFF), Color(0xFFE9EBF1), Color(0xFFD4D7DF))
     }
     val shape = MaterialTheme.shapes.extraLarge
+    val borderColor = if (isDark) {
+        colorScheme.primary.copy(alpha = 0.35f)
+    } else {
+        colorScheme.outline.copy(alpha = 0.08f)
+    }
+    val hasHeroImage = !survey.imageUrl.isNullOrBlank()
+    val titleColor = if (hasHeroImage) Color.White else colorScheme.onBackground
+    val secondaryTextColor = if (hasHeroImage) Color.White.copy(alpha = 0.9f) else colorScheme.onSurfaceVariant
+    val accentColor = if (hasHeroImage) Color.White else colorScheme.primary
+    val mutedIconColor = if (hasHeroImage) Color.White.copy(alpha = 0.75f) else colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    val statTagContainer = if (hasHeroImage) Color.White.copy(alpha = 0.2f) else colorScheme.surfaceVariant
+    val statTagContent = if (hasHeroImage) Color.White else colorScheme.onSurfaceVariant
+    val progressTrackColor = if (hasHeroImage) Color.White.copy(alpha = 0.3f) else colorScheme.surfaceVariant
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Brush.verticalGradient(gradientColors))
-            .border(1.dp, colorScheme.outline.copy(alpha = 0.05f), shape)
+            .border(1.dp, borderColor, shape)
             .clickable { onClick() }
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header: Title and Points
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+        if (hasHeroImage) {
+            AsyncImage(
+                model = survey.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize()
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.65f),
+                                Color.Black.copy(alpha = 0.15f)
+                            )
+                        )
+                    )
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Brush.verticalGradient(gradientColors))
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = survey.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (survey.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+            // Header: Title and Points
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = survey.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        text = survey.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = titleColor,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (survey.description.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = survey.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = secondaryTextColor,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            if (survey.points > 0) {
-                QzoneTag(
-                    text = "+${survey.points} pts",
-                    emphasize = true
-                )
-            }
-        }
-
-        // Location
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
-                tint = colorScheme.primary,
-                modifier = Modifier.size(16.dp)
-            )
-            Text(
-                text = locationAddress ?: String.format("%.4f, %.4f", survey.latitude, survey.longitude),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colorScheme.onSurfaceVariant
-            )
-        }
-
-        // Footer: Status / Progress
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (survey.isCompleted) {
-                QzoneTag(
-                    text = "Completed",
-                    containerColor = colorScheme.secondaryContainer,
-                    contentColor = colorScheme.onSecondaryContainer
-                )
-            } else {
-                // Calculate progress if started
-                val total = survey.questions.size
-                val current = survey.currentQuestionIndex
-                if (current > 0 && total > 0) {
-                     val progress = (current.toFloat() / total) * 100
-                     Text(
-                         text = "${progress.toInt()}% completed",
-                         style = MaterialTheme.typography.labelMedium,
-                         color = colorScheme.primary
-                     )
-                } else {
-                    val displayCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
+                Spacer(modifier = Modifier.width(12.dp))
+                if (survey.points > 0) {
                     QzoneTag(
-                        text = "$displayCount questions",
-                        containerColor = colorScheme.surfaceVariant,
-                        contentColor = colorScheme.onSurfaceVariant
+                        text = "+${survey.points} pts",
+                        emphasize = true
                     )
                 }
             }
-            
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = "Start",
-                tint = colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        
-        // Progress Bar for incomplete but started surveys
-        if (!survey.isCompleted && survey.currentQuestionIndex > 0 && survey.questions.isNotEmpty()) {
-             LinearProgressIndicator(
-                 progress = survey.currentQuestionIndex.toFloat() / survey.questions.size,
-                 modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-                 color = colorScheme.primary,
-                 trackColor = colorScheme.surfaceVariant
-             )
+
+            // Location
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = locationAddress ?: String.format("%.4f, %.4f", survey.latitude, survey.longitude),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = secondaryTextColor
+                )
+            }
+
+            // Footer: Status / Progress
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (survey.isCompleted) {
+                    QzoneTag(
+                        text = "Completed",
+                        containerColor = colorScheme.secondaryContainer,
+                        contentColor = colorScheme.onSecondaryContainer
+                    )
+                } else {
+                    // Calculate progress if started
+                    val total = survey.questions.size
+                    val current = survey.currentQuestionIndex
+                    if (current > 0 && total > 0) {
+                        val progress = (current.toFloat() / total) * 100
+                        Text(
+                            text = "${progress.toInt()}% completed",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = accentColor
+                        )
+                    } else {
+                        val displayCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
+                        QzoneTag(
+                            text = "$displayCount questions",
+                            containerColor = statTagContainer,
+                            contentColor = statTagContent
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "Start",
+                    tint = mutedIconColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Progress Bar for incomplete but started surveys
+            if (!survey.isCompleted && survey.currentQuestionIndex > 0 && survey.questions.isNotEmpty()) {
+                LinearProgressIndicator(
+                    progress = survey.currentQuestionIndex.toFloat() / survey.questions.size,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = accentColor,
+                    trackColor = progressTrackColor
+                )
+            }
         }
     }
 }
+
+private val locationAddressCache = mutableMapOf<String, String?>()

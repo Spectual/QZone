@@ -6,6 +6,9 @@ import com.qzone.data.model.UserLocation
 import com.qzone.data.network.QzoneApiClient
 import com.qzone.data.network.model.NetworkSurveyOption
 import com.qzone.data.network.model.NetworkSurveyQuestion
+import com.qzone.data.model.SurveyResponseDetail
+import com.qzone.data.model.QuestionAnswerResponse
+import com.qzone.data.model.UserSurveyHistoryItem
 import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,12 +18,16 @@ import kotlinx.coroutines.flow.map
 import com.qzone.data.model.SurveyStatus
 import com.qzone.data.network.model.UserSurveyHistoryRequest
 import com.qzone.data.network.model.UserSurveyRecord
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import retrofit2.HttpException
 
 class ApiSurveyRepository : SurveyRepository {
     private val surveysFlow = MutableStateFlow<List<Survey>>(emptyList())
     override val nearbySurveys: Flow<List<Survey>> = surveysFlow.asStateFlow()
+    private val userHistoryFlow = MutableStateFlow<List<UserSurveyHistoryItem>>(emptyList())
     private val surveyStatusCache = mutableMapOf<String, SurveyProgressSnapshot>()
     private var lastHistorySyncMs = 0L
 
@@ -56,14 +63,16 @@ class ApiSurveyRepository : SurveyRepository {
                 val merged = Survey(
                     id = loc.documentId,
                     title = loc.title,
-                    description = loc.description,
+                    description = loc.description.orEmpty(),
+                    imageUrl = loc.imageUrl ?: existing?.imageUrl,
                     latitude = loc.latitude,
                     longitude = loc.longitude,
-                    points = existing?.points ?: 0,
+                    points = loc.points ?: existing?.points ?: 0,
                     questions = existing?.questions ?: emptyList(),
                     questionCount = snapshot?.questionCount ?: existing?.questionCount ?: 0,
                     isCompleted = snapshot?.isCompleted ?: false,
-                    status = snapshot?.status ?: SurveyStatus.EMPTY
+                    status = snapshot?.status ?: SurveyStatus.EMPTY,
+                    responseId = existing?.responseId
                 )
                 currentMap[loc.documentId] = merged
                 orderedIds.add(loc.documentId)
@@ -86,7 +95,7 @@ class ApiSurveyRepository : SurveyRepository {
             Log.d(TAG, "GET /api/survey/$id/questions response: success=${questionResponse.success}, data=${questionResponse.data}")
 
             val baseSurvey = if (detailResponse.success && detailResponse.data != null) {
-                detailResponse.data.toSurvey(cached)
+                detailResponse.data.toSurvey(existingSurvey = cached)
             } else {
                 Log.w(TAG, "Survey detail request failed for $id code=${detailResponse.code} msg=${detailResponse.msg}")
                 cached
@@ -114,13 +123,21 @@ class ApiSurveyRepository : SurveyRepository {
         }
     }
 
-    override suspend fun markSurveyCompleted(id: String) {
-        // Optionally call API to mark as completed
-        // For now, just update local state
+    override suspend fun markSurveyCompleted(id: String, responseId: String?) {
         rememberProgress(id, true, SurveyStatus.COMPLETE, questionCount = surveysFlow.value.firstOrNull { it.id == id }?.questionCount ?: 0)
-        surveysFlow.value = surveysFlow.value.map {
-            if (it.id == id) it.copy(isCompleted = true, status = SurveyStatus.COMPLETE) else it
+        var completedSurvey: Survey? = null
+        surveysFlow.value = surveysFlow.value.map { survey ->
+            if (survey.id == id) {
+                val updated = survey.copy(
+                    isCompleted = true,
+                    status = SurveyStatus.COMPLETE,
+                    responseId = responseId ?: survey.responseId
+                )
+                completedSurvey = updated
+                updated
+            } else survey
         }
+        completedSurvey?.let { updateHistoryEntry(it, markComplete = true) }
     }
 
     override fun getCompletedSurveys(): Flow<List<Survey>> {
@@ -131,8 +148,11 @@ class ApiSurveyRepository : SurveyRepository {
         return surveysFlow.map { list -> list.filter { !it.isCompleted } }
     }
 
+    override fun getUserSurveyHistory(): Flow<List<UserSurveyHistoryItem>> = userHistoryFlow.asStateFlow()
+
     override suspend fun saveSurveyProgress(survey: Survey) {
         updateCachedSurvey(survey)
+        updateHistoryEntry(survey, markComplete = false)
     }
 
     override suspend fun refreshSurveyHistory() {
@@ -145,6 +165,22 @@ class ApiSurveyRepository : SurveyRepository {
         surveyStatusCache.clear()
         lastHistorySyncMs = 0L
         surveysFlow.value = emptyList()
+    }
+
+    override suspend fun getResponseDetail(responseId: String): SurveyResponseDetail? {
+        return try {
+            val response = QzoneApiClient.service.getResponseDetail(responseId)
+            Log.d(TAG, "GET /api/response/detail/$responseId response: success=${response.success}, data=${response.data}")
+            if (response.success && response.data != null) {
+                response.data.toDomain()
+            } else {
+                Log.w(TAG, "Response detail fetch failed for $responseId: ${response.msg}")
+                null
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Response detail request error for $responseId", t)
+            null
+        }
     }
 
     private fun updateCachedSurvey(updated: Survey) {
@@ -195,13 +231,14 @@ class ApiSurveyRepository : SurveyRepository {
         }
     }
 
-    private suspend fun syncSurveyHistory(): Boolean {
+private suspend fun syncSurveyHistory(): Boolean {
         return try {
             val response = QzoneApiClient.service.getUserSurveyHistory(
                 UserSurveyHistoryRequest(page = 1, pageSize = 100)
             )
             if (response.success && response.data != null) {
                 val historyRecords = response.data.records
+                userHistoryFlow.value = historyRecords.map { it.toHistoryItem() }
                 val currentSurveys = surveysFlow.value.toMutableList()
 
                 historyRecords.forEach { record ->
@@ -213,7 +250,8 @@ class ApiSurveyRepository : SurveyRepository {
                         currentSurveys[existingIndex] = existing.copy(
                             isCompleted = record.isComplete,
                             status = status,
-                            questionCount = record.totalQuestions
+                            questionCount = record.totalQuestions,
+                            responseId = record.responseId ?: existing.responseId
                         )
                         rememberProgress(record.surveyId, record.isComplete, status, record.totalQuestions)
                     } else {
@@ -222,13 +260,15 @@ class ApiSurveyRepository : SurveyRepository {
                             Survey(
                                 id = record.surveyId,
                                 title = record.surveyTitle,
-                                description = record.surveyDescription,
+                                description = record.surveyDescription.orEmpty(),
+                                imageUrl = record.surveyImageUrl,
                                 latitude = 0.0,
                                 longitude = 0.0,
                                 points = 0,
                                 isCompleted = record.isComplete,
                                 status = status,
-                                questionCount = record.totalQuestions
+                                questionCount = record.totalQuestions,
+                                responseId = record.responseId
                             )
                         )
                     }
@@ -245,10 +285,78 @@ class ApiSurveyRepository : SurveyRepository {
         }
     }
 
+    private fun updateHistoryEntry(survey: Survey, markComplete: Boolean) {
+        val totalQuestions = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
+        val answeredQuestions = if (markComplete) {
+            totalQuestions
+        } else {
+            survey.answers.values.count { answers -> answers.isNotEmpty() }
+        }
+        val completionRate = if (totalQuestions > 0) {
+            (answeredQuestions.toDouble() / totalQuestions.toDouble()) * 100.0
+        } else {
+            0.0
+        }
+        val derivedStatus = when {
+            markComplete -> SurveyStatus.COMPLETE
+            survey.status == SurveyStatus.PARTIAL || survey.status == SurveyStatus.IN_PROGRESS -> survey.status
+            answeredQuestions > 0 -> SurveyStatus.IN_PROGRESS
+            else -> SurveyStatus.EMPTY
+        }
+
+        val newItem = UserSurveyHistoryItem(
+            responseId = survey.responseId.orEmpty(),
+            surveyId = survey.id,
+            surveyTitle = survey.title,
+            surveyDescription = survey.description,
+            surveyImageUrl = survey.imageUrl,
+            answeredQuestions = answeredQuestions,
+            totalQuestions = totalQuestions,
+            completionRate = completionRate,
+            responseTime = formatTimestamp(),
+            status = derivedStatus,
+            isComplete = markComplete
+        )
+        val current = userHistoryFlow.value
+        val updated = if (current.isEmpty()) {
+            listOf(newItem)
+        } else {
+            val existingIndex = current.indexOfFirst { it.surveyId == survey.id }
+            if (existingIndex >= 0) {
+                current.mapIndexed { index, item ->
+                    if (index == existingIndex) newItem else item
+                }
+            } else {
+                listOf(newItem) + current
+            }
+        }
+        userHistoryFlow.value = updated
+    }
+
+    private fun formatTimestamp(): String =
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+
     companion object {
         private const val TAG = "ApiSurveyRepository"
         private val HISTORY_SYNC_WINDOW_MS = TimeUnit.MINUTES.toMillis(5)
     }
+}
+
+private fun UserSurveyRecord.toHistoryItem(): UserSurveyHistoryItem {
+    val surveyStatus = mapStatus(this)
+    return UserSurveyHistoryItem(
+        responseId = responseId.orEmpty(),
+        surveyId = surveyId,
+        surveyTitle = surveyTitle,
+        surveyDescription = surveyDescription.orEmpty(),
+        surveyImageUrl = surveyImageUrl,
+        answeredQuestions = answeredQuestions,
+        totalQuestions = totalQuestions,
+        completionRate = completionRate,
+        responseTime = responseTime,
+        status = surveyStatus,
+        isComplete = isComplete
+    )
 }
 
 private fun mapStatus(record: UserSurveyRecord): SurveyStatus {
@@ -276,3 +384,29 @@ private data class SurveyProgressSnapshot(
 
 private fun Survey.toProgressSnapshot(): SurveyProgressSnapshot =
     SurveyProgressSnapshot(isCompleted = isCompleted, status = status, questionCount = questionCount)
+
+private fun com.qzone.data.network.model.NetworkResponseDetail.toDomain(): SurveyResponseDetail {
+    return SurveyResponseDetail(
+        responseId = responseId.orEmpty(),
+        surveyId = surveyId.orEmpty(),
+        status = status.orEmpty(),
+        answeredQuestions = answeredQuestions ?: 0,
+        totalQuestions = totalQuestions ?: 0,
+        completionRate = completionRate ?: 0.0,
+        responseTime = responseTime,
+        questionAnswers = questionAnswers.orEmpty().map { it.toDomain() }
+    )
+}
+
+private fun com.qzone.data.network.model.NetworkQuestionAnswer.toDomain(): QuestionAnswerResponse {
+    val resolvedType = (type ?: questionType)?.ifBlank { null } ?: "unknown"
+    val resolvedContent = (content ?: questionContent)?.ifBlank { null } ?: "Question"
+    return QuestionAnswerResponse(
+        questionId = documentId,
+        questionContent = resolvedContent,
+        type = resolvedType,
+        selectedOptions = selectedOptions.orEmpty(),
+        textAnswer = textContent,
+        options = emptyList()
+    )
+}

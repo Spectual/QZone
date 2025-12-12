@@ -10,6 +10,10 @@
     <string name="phone_sign_in_failed">Phone sign-in failed. Please try again.</string>
     <string name="phone_sign_in_title">Phone sign-in</string>
     <string name="phone_number_hint">Phone number</string>
+    <string name="phone_add_title">Link phone number</string>
+    <string name="phone_add_description">Enter the phone number you want to associate with your account.</string>
+    <string name="phone_add_success">Phone number linked</string>
+    <string name="phone_send_code_first">Please request the verification code first.</string>
     <string name="sms_code_hint">Verification code</string>
     <string name="send_code">Send code</string>
     <string name="verify_code">Verify code</string>
@@ -26,5 +30,5 @@
     <string name="map_refresh">Refresh</string>
     <string name="map_enable_location">Enable location</string>
     <string name="map_no_results">No nearby surveys yet. Try refreshing or move to a different area.</string>
-    <string name="map_result_count">%1$d survey spots loaded</string>
+    <string name="map_status_summary">Completed %1$d / Available %2$d</string>
 </resources>

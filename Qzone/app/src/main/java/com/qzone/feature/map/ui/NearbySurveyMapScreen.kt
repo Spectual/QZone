@@ -44,6 +44,7 @@ fun NearbySurveyMapScreen(
     state: NearbyMapUiState,
     onRefresh: () -> Unit,
     onLocationPermissionGranted: () -> Unit,
+    onSurveySelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val defaultLocation = LatLng(37.4221, -122.0841)
@@ -88,7 +89,11 @@ fun NearbySurveyMapScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = stringResource(id = R.string.map_description),
+                text = stringResource(
+                    id = R.string.map_status_summary,
+                    state.completedCount,
+                    state.activeCount
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -176,7 +181,11 @@ fun NearbySurveyMapScreen(
                             Marker(
                                 state = MarkerState(position = markerPosition),
                                 title = location.title,
-                                snippet = snippet
+                                snippet = snippet,
+                                onClick = {
+                                    onSurveySelected(location.documentId)
+                                    true
+                                }
                             )
                         }
                     }
@@ -185,7 +194,6 @@ fun NearbySurveyMapScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .align(Alignment.Center)
-                        )
                     } else if (state.nearbyLocations.isEmpty()) {
                         Text(
                             text = stringResource(id = R.string.map_no_results),

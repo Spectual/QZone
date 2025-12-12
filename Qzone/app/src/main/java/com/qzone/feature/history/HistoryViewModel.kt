@@ -3,7 +3,7 @@ package com.qzone.feature.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.qzone.data.model.Survey
+import com.qzone.data.model.UserSurveyHistoryItem
 import com.qzone.domain.repository.SurveyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,10 +17,12 @@ import com.qzone.data.model.SurveyStatus
 
 data class HistoryUiState(
     val query: String = "",
-    val completedSurveys: List<Survey> = emptyList(),
-    val inProgressSurveys: List<Survey> = emptyList(),
-    val filteredCompleted: List<Survey> = emptyList(),
-    val filteredInProgress: List<Survey> = emptyList()
+    val completedRecords: List<UserSurveyHistoryItem> = emptyList(),
+    val inProgressRecords: List<UserSurveyHistoryItem> = emptyList(),
+    val filteredCompleted: List<UserSurveyHistoryItem> = emptyList(),
+    val filteredInProgress: List<UserSurveyHistoryItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 class HistoryViewModel(
@@ -32,24 +34,24 @@ class HistoryViewModel(
 
     init {
         refreshHistory()
+        observeHistory()
+    }
+
+    private fun observeHistory() {
         viewModelScope.launch {
-            combine(
-                surveyRepository.getCompletedSurveys(),
-                surveyRepository.getUncompletedSurveys()
-            ) { completed, uncompleted ->
-                // Treat both EMPTY (never started) and PARTIAL as "in progress"
-                val actualInProgress = uncompleted.filter { 
-                    it.status == SurveyStatus.IN_PROGRESS || it.status == SurveyStatus.PARTIAL
-                }
-                completed to actualInProgress
-            }.collect { (completed, inProgress) ->
+            surveyRepository.getUserSurveyHistory().collect { records ->
+                val (completed, inProgress) = records.partition { it.isComplete || it.status == SurveyStatus.COMPLETE }
                 QLog.d(TAG) { "History flow update completed=${completed.size} inProgress=${inProgress.size}" }
-                _uiState.update {
-                    it.copy(
-                        completedSurveys = completed,
-                        inProgressSurveys = inProgress,
-                        filteredCompleted = filter(completed, it.query),
-                        filteredInProgress = filter(inProgress, it.query)
+                _uiState.update { state ->
+                    val filteredCompleted = filter(completed, state.query)
+                    val filteredInProgress = filter(inProgress, state.query)
+                    state.copy(
+                        completedRecords = completed,
+                        inProgressRecords = inProgress,
+                        filteredCompleted = filteredCompleted,
+                        filteredInProgress = filteredInProgress,
+                        isLoading = false,
+                        errorMessage = null
                     )
                 }
             }
@@ -60,9 +62,11 @@ class HistoryViewModel(
         viewModelScope.launch {
             QLog.d(TAG) { "refreshHistory() invoked" }
             try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 surveyRepository.refreshSurveyHistory()
             } catch (e: Exception) {
                 QLog.w(TAG) { "Failed to refresh survey history: ${e.message}" }
+                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
             }
         }
     }
@@ -70,8 +74,8 @@ class HistoryViewModel(
     fun onQueryChange(query: String) {
         QLog.d(TAG) { "History query changed -> $query" }
         _uiState.update { state ->
-            val filteredCompleted = filter(state.completedSurveys, query)
-            val filteredInProgress = filter(state.inProgressSurveys, query)
+            val filteredCompleted = filter(state.completedRecords, query)
+            val filteredInProgress = filter(state.inProgressRecords, query)
             state.copy(
                 query = query,
                 filteredCompleted = filteredCompleted,
@@ -80,11 +84,11 @@ class HistoryViewModel(
         }
     }
 
-    private fun filter(list: List<Survey>, query: String): List<Survey> {
+    private fun filter(list: List<UserSurveyHistoryItem>, query: String): List<UserSurveyHistoryItem> {
         if (query.isBlank()) return list
         val lower = query.lowercase()
         return list.filter { item ->
-            item.title.lowercase().contains(lower) || item.description.lowercase().contains(lower)
+            item.surveyTitle.lowercase().contains(lower) || item.surveyDescription.lowercase().contains(lower)
         }
     }
 

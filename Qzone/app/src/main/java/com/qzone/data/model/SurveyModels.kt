@@ -24,6 +24,7 @@ data class Survey(
     val id: String,
     val title: String,
     val description: String,
+    val imageUrl: String? = null,
     val latitude: Double,
     val longitude: Double,
     val points: Int = 0,
@@ -32,7 +33,8 @@ data class Survey(
     val isCompleted: Boolean = false,
     val status: SurveyStatus = SurveyStatus.EMPTY,
     val currentQuestionIndex: Int = 0,
-    val answers: Map<String, List<String>> = emptyMap()
+    val answers: Map<String, List<String>> = emptyMap(),
+    val responseId: String? = null
 ) : Parcelable
 
 enum class SurveyStatus {
@@ -52,11 +54,51 @@ data class SurveyHistoryItem(
     val locationLabel: String
 ) : Parcelable
 
+data class UserSurveyHistoryItem(
+    val responseId: String,
+    val surveyId: String,
+    val surveyTitle: String,
+    val surveyDescription: String,
+    val surveyImageUrl: String? = null,
+    val answeredQuestions: Int,
+    val totalQuestions: Int,
+    val completionRate: Double,
+    val responseTime: String? = null,
+    val status: SurveyStatus,
+    val isComplete: Boolean
+)
+
+data class SurveyResponseDetail(
+    val responseId: String,
+    val surveyId: String,
+    val status: String,
+    val answeredQuestions: Int,
+    val totalQuestions: Int,
+    val completionRate: Double,
+    val responseTime: String? = null,
+    val questionAnswers: List<QuestionAnswerResponse>
+)
+
+data class QuestionAnswerResponse(
+    val questionId: String,
+    val questionContent: String,
+    val type: String,
+    val selectedOptions: List<String>,
+    val textAnswer: String?,
+    val options: List<QuestionAnswerOption> = emptyList()
+)
+
+data class QuestionAnswerOption(
+    val label: String,
+    val content: String,
+    val isSelected: Boolean
+)
+
 @Parcelize
 data class NearbyLocation(
     @Json(name = "documentId") val documentId: String,
     @Json(name = "title") val title: String,
-    @Json(name = "description") val description: String = "",
+    @Json(name = "description") val description: String? = null,
     @Json(name = "latitude") val latitude: Double,
     @Json(name = "longitude") val longitude: Double,
     @Json(name = "distanceMile") val distance: Double? = null,

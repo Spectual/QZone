@@ -45,17 +45,25 @@ fun QzoneElevatedSurface(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.extraLarge,
     tonalElevation: Dp = 6.dp,
-    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+    borderColor: Color = Color.Unspecified,
     content: @Composable () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+    val defaultBorder = if (colorScheme.background.luminance() < 0.2f) {
+        colorScheme.primary.copy(alpha = 0.35f)
+    } else {
+        colorScheme.outline.copy(alpha = 0.15f)
+    }
+    val resolvedBorderColor = if (borderColor == Color.Unspecified) defaultBorder else borderColor
+
     Surface(
         modifier = modifier,
         shape = shape,
         tonalElevation = tonalElevation,
         shadowElevation = tonalElevation,
-        border = BorderStroke(1.dp, borderColor),
+        border = BorderStroke(1.dp, resolvedBorderColor),
         content = content,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+        color = colorScheme.surface.copy(alpha = 0.95f)
     )
 }
 

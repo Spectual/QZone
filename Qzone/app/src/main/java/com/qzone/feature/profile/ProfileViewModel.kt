@@ -135,6 +135,18 @@ class ProfileViewModel(
         }
     }
 
+    fun linkPhoneNumber(phone: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val trimmed = phone.trim()
+            if (trimmed.isEmpty()) {
+                onResult(false, "Please enter a valid phone number.")
+                return@launch
+            }
+            val result = userRepository.linkPhoneNumber(trimmed)
+            onResult(result.success, result.errorMessage)
+        }
+    }
+
     fun uploadAvatar(imageBytes: ByteArray, contentType: String, filename: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {

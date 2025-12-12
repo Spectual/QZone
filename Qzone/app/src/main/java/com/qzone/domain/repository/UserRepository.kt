@@ -19,6 +19,7 @@ interface UserRepository {
     suspend fun signInWithGoogle(idToken: String): AuthResult
     suspend fun finalizeFirebaseLogin(mode: FirebaseLoginMode = FirebaseLoginMode.THIRD_PARTY): AuthResult
     suspend fun updateProfile(edit: EditableProfile)
+    suspend fun linkPhoneNumber(phone: String): AuthResult
     suspend fun refreshUserProfile(): Boolean
     suspend fun recordSurveyCompletion(survey: Survey)
     suspend fun deductPoints(amount: Int)

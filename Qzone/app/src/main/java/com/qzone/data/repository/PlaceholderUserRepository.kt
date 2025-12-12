@@ -99,6 +99,14 @@ class PlaceholderUserRepository : UserRepository {
         userFlow.value = storedProfile
     }
 
+    override suspend fun linkPhoneNumber(phone: String): AuthResult {
+        delay(200)
+        if (phone.isBlank()) {
+            return AuthResult(success = false, errorMessage = "Please enter a valid phone number.")
+        }
+        return AuthResult(success = true)
+    }
+
     override suspend fun refreshUserProfile(): Boolean {
         delay(100)
         userFlow.value = storedProfile
@@ -118,7 +126,6 @@ class PlaceholderUserRepository : UserRepository {
         )
         val current = userFlow.value
         storedProfile = current.copy(
-            totalPoints = current.totalPoints + survey.points,
             history = listOf(newHistory) + current.history
         )
         userFlow.value = storedProfile

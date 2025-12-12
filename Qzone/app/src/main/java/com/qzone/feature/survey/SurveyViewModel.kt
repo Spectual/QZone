@@ -146,23 +146,32 @@ class SurveyViewModel(
             QLog.d(TAG) { "Submit response success=${response.success} code=${response.code} msg=${response.msg}" }
             if (response.success) {
                 val completionResponseId = response.data?.responseId
+                val serverEarnedPoints = response.data?.earnedPoints
+                val earnedDelta = when {
+                    serverEarnedPoints != null -> {
+                        applyEarnedPointsDelta(serverEarnedPoints)
+                        serverEarnedPoints
+                    }
+                    else -> refreshUserPoints()
+                }
                 repository.markSurveyCompleted(surveyId, completionResponseId)
                 runCatching { localSurveyRepository.markSurveyCompleted(surveyId) }
                     .onFailure { throwable -> QLog.w(TAG) { "Failed to update local survey completion: ${throwable.message}" } }
-                userRepository.recordSurveyCompletion(survey)
-                val earnedPoints = refreshUserPoints()
+                val resolvedPoints = earnedDelta ?: survey.points
                 val completedSurvey = survey.copy(
+                    points = resolvedPoints,
                     isCompleted = true,
                     status = SurveyStatus.COMPLETE,
                     responseId = completionResponseId ?: survey.responseId
                 )
+                userRepository.recordSurveyCompletion(completedSurvey)
                 _uiState.update {
                     it.copy(
                         survey = completedSurvey,
                         isSubmitting = false,
                         isComplete = true,
                         validationError = null,
-                        earnedPoints = earnedPoints ?: survey.points
+                        earnedPoints = resolvedPoints
                     )
                 }
             } else {
@@ -292,6 +301,16 @@ class SurveyViewModel(
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return SurveyViewModel(repository, userRepository, surveyId, localSurveyRepository) as T
                 }
+            }
+    }
+
+    private suspend fun applyEarnedPointsDelta(delta: Int) {
+        if (delta <= 0) return
+        val updatedTotal = (lastKnownUserPoints + delta).coerceAtLeast(0)
+        lastKnownUserPoints = updatedTotal
+        runCatching { userRepository.updatePoints(updatedTotal) }
+            .onFailure { throwable ->
+                QLog.w(TAG) { "Failed to apply earned points delta: ${throwable.message}" }
             }
     }
 

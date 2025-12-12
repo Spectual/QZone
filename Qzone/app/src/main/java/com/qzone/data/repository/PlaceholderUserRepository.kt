@@ -126,7 +126,6 @@ class PlaceholderUserRepository : UserRepository {
         )
         val current = userFlow.value
         storedProfile = current.copy(
-            totalPoints = current.totalPoints + survey.points,
             history = listOf(newHistory) + current.history
         )
         userFlow.value = storedProfile

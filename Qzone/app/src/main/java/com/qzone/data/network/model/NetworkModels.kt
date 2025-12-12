@@ -60,7 +60,8 @@ data class SubmitResponseResult(
     @Json(name = "answeredQuestions") val answeredQuestions: Int = 0,
     @Json(name = "totalQuestions") val totalQuestions: Int = 0,
     @Json(name = "completionRate") val completionRate: Double = 0.0,
-    @Json(name = "isFirstComplete") val isFirstComplete: Boolean = false
+    @Json(name = "isFirstComplete") val isFirstComplete: Boolean = false,
+    @Json(name = "earnedPoints") val earnedPoints: Int? = null
 )
 
 // Nearby location query body (POST fallback)
@@ -74,6 +75,7 @@ data class NetworkSurveyDetail(
     @Json(name = "documentId") val documentId: String,
     @Json(name = "title") val title: String,
     @Json(name = "description") val description: String? = null,
+    @Json(name = "imageUrl") val imageUrl: String? = null,
     @Json(name = "latitude") val latitude: Double? = null,
     @Json(name = "longitude") val longitude: Double? = null,
     @Json(name = "points") val points: Int? = null,
@@ -86,6 +88,7 @@ data class NetworkSurveyDetail(
             id = documentId,
             title = title,
             description = description.orEmpty(),
+            imageUrl = imageUrl,
             latitude = latitude ?: 0.0,
             longitude = longitude ?: 0.0,
             points = points ?: 0,
@@ -97,6 +100,7 @@ data class NetworkSurveyDetail(
         return fallback.copy(
             title = title.ifBlank { fallback.title },
             description = description ?: fallback.description,
+            imageUrl = imageUrl ?: fallback.imageUrl,
             latitude = latitude ?: fallback.latitude,
             longitude = longitude ?: fallback.longitude,
             points = points ?: fallback.points,

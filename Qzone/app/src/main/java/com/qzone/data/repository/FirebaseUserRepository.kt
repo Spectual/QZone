@@ -219,7 +219,6 @@ class FirebaseUserRepository(
             locationLabel = survey.title
         )
         val updated = current.copy(
-            totalPoints = current.totalPoints + survey.points,
             history = listOf(newHistory) + current.history
         )
         delay(200)
@@ -517,4 +516,3 @@ class FirebaseUserRepository(
         }
     }
 }
-

@@ -24,6 +24,7 @@ import com.qzone.data.network.model.ThirdPartyLoginRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -35,7 +36,7 @@ interface QzoneApiService {
     @POST("/api/user/phone-login")
     suspend fun loginPhone(@Body request: PhoneLoginRequest): ApiResult<LoginResponse>
 
-    @POST("/api/user/phone")
+    @PUT("/api/user/phone")
     suspend fun addPhoneNumber(@Body request: PhoneBindingRequest): ApiResult<String>
 
     @POST("/api/user/third-party")

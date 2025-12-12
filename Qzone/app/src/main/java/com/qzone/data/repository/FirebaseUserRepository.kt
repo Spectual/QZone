@@ -22,6 +22,7 @@ import com.qzone.data.network.model.PhoneBindingRequest
 import com.qzone.data.network.model.PhoneLoginRequest
 import com.qzone.data.network.model.ThirdPartyLoginRequest
 import com.qzone.data.network.model.UpdateAvatarRequest
+import com.qzone.data.network.model.UpdateUserNameRequest
 import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.domain.repository.FirebaseLoginMode
 import com.qzone.domain.repository.UserRepository
@@ -150,27 +151,48 @@ class FirebaseUserRepository(
     }
 
     override suspend fun updateProfile(edit: EditableProfile) {
+        // Only update username via backend API
+        if (edit.displayName.isBlank()) {
+            Log.w(TAG, "Cannot update profile: display name is blank")
+            return
+        }
+        
+        // Call backend API to update username
+        val response = runCatching {
+            apiService.updateUserName(UpdateUserNameRequest(userName = edit.displayName))
+        }.getOrElse { throwable ->
+            if (throwable is CancellationException) throw throwable
+            Log.e(TAG, "Failed to update username via API", throwable)
+            throw throwable
+        }
+        
+        if (!response.success) {
+            Log.e(TAG, "Backend API failed to update username: ${response.msg}")
+            throw IllegalStateException(response.msg ?: "Failed to update username")
+        }
+        
+        // Update local state after successful API call
         val current = _currentUser.value
-        val updated = current.copy(
-            displayName = edit.displayName,
-            email = edit.email,
-            countryRegion = edit.countryRegion
-        )
+        val updated = current.copy(displayName = edit.displayName)
         _currentUser.emit(updated)
+        
+        // Also update Firebase Auth profile for consistency
         auth.currentUser?.let { firebaseUser ->
             runCatching {
-                if (firebaseUser.email != edit.email && edit.email.isNotBlank()) {
-                    firebaseUser.updateEmail(edit.email).await()
-                }
-                if (edit.displayName.isNotBlank()) {
-                    firebaseUser.updateProfile(
-                        com.google.firebase.auth.UserProfileChangeRequest.Builder()
-                            .setDisplayName(edit.displayName)
-                            .build()
-                    ).await()
-                }
+                firebaseUser.updateProfile(
+                    com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                        .setDisplayName(edit.displayName)
+                        .build()
+                ).await()
+                Log.d(TAG, "Updated Firebase Auth display name")
+            }.onFailure { e ->
+                Log.w(TAG, "Failed to update Firebase Auth display name", e)
+                // Continue as backend update was successful
             }
         }
+        
+        // Refresh user profile from backend to ensure consistency
+        fetchAndCacheUserProfile()
     }
 
     override suspend fun linkPhoneNumber(phone: String): AuthResult {

@@ -517,9 +517,6 @@ fun QzoneNavHost(
             EditProfileScreen(
                 state = profileViewModel.editState,
                 onNameChanged = profileViewModel::onNameChanged,
-                onEmailChanged = profileViewModel::onEmailChanged,
-                onPasswordChanged = profileViewModel::onPasswordChanged,
-                onCountryChanged = profileViewModel::onCountryChanged,
                 onSave = {
                     profileViewModel.saveEdits()
                     navController.popBackStack()

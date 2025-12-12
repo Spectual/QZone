@@ -18,6 +18,7 @@ import com.qzone.data.network.model.RedeemCouponRequest
 import com.qzone.data.network.model.UploadUrlRequest
 import com.qzone.data.network.model.UploadUrlResponse
 import com.qzone.data.network.model.UpdateAvatarRequest
+import com.qzone.data.network.model.UpdateUserNameRequest
 import com.qzone.data.network.model.CouponListRequest
 import com.qzone.data.network.model.CouponListResponse
 import com.qzone.data.network.model.ThirdPartyLoginRequest
@@ -84,6 +85,9 @@ interface QzoneApiService {
 
     @POST("/api/user/avatar")
     suspend fun updateAvatar(@Body request: UpdateAvatarRequest): ApiResult<String>
+
+    @PUT("/api/user/name")
+    suspend fun updateUserName(@Body request: UpdateUserNameRequest): ApiResult<String>
 
     @POST("/api/response/user/surveys")
     suspend fun getUserSurveyHistory(@Body request: com.qzone.data.network.model.UserSurveyHistoryRequest): ApiResult<com.qzone.data.network.model.UserSurveyHistoryResponse>

@@ -115,11 +115,6 @@ fun RegisterScreen(
                     colors = textFieldColors,
                     shape = MaterialTheme.shapes.large
                 )
-                Text(
-                    text = "Your password should include at least 8 characters with a mix of letters and numbers.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
         Button(
             onClick = onRegister,
             enabled = !uiState.isLoading,

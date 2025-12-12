@@ -13,8 +13,8 @@ data class ApiResult<T>(
 )
 
 data class LoginRequest(
-    @Json(name = "tokenId")
-    val tokenId: String
+    @Json(name = "firebaseToken")
+    val firebaseToken: String
 )
 
 data class PhoneLoginRequest(
@@ -200,6 +200,10 @@ data class UploadUrlResponse(
 
 data class UpdateAvatarRequest(
     @Json(name = "avatarUrl") val avatarUrl: String
+)
+
+data class UpdateUserNameRequest(
+    @Json(name = "userName") val userName: String
 )
 
 data class ThirdPartyLoginRequest(

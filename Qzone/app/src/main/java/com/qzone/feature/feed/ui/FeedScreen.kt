@@ -36,7 +36,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,11 +79,18 @@ fun FeedScreen(
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val context = LocalContext.current
 
-    // Setup ShakeDetector
+    // Setup ShakeDetector for shake-to-refresh
+    // Use rememberUpdatedState to always access the latest state in the callback
+    val isRefreshingState = rememberUpdatedState(uiState.isRefreshing)
+    val onRefreshState = rememberUpdatedState(onRefresh)
+    
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
         val shakeDetector = ShakeDetector {
-            onRefresh()
+            // Only trigger refresh if not already refreshing
+            if (!isRefreshingState.value) {
+                onRefreshState.value()
+            }
         }
         val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         if (accelerometer != null) {

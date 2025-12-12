@@ -21,12 +21,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import android.hardware.Sensor
+import android.hardware.SensorManager
+import com.qzone.util.ShakeDetector
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -47,9 +53,33 @@ fun NearbySurveyMapScreen(
     onSurveySelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val defaultLocation = LatLng(37.4221, -122.0841)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, 5f)
+    }
+
+    // Setup ShakeDetector for shake-to-refresh
+    // Use rememberUpdatedState to always access the latest state in the callback
+    val isLoadingState = rememberUpdatedState(state.isLoading)
+    val onRefreshState = rememberUpdatedState(onRefresh)
+    
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
+        val shakeDetector = ShakeDetector {
+            // Only trigger refresh if not already loading
+            if (!isLoadingState.value) {
+                onRefreshState.value()
+            }
+        }
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        if (accelerometer != null) {
+            sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_UI)
+        }
+
+        onDispose {
+            sensorManager.unregisterListener(shakeDetector)
+        }
     }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -194,6 +224,7 @@ fun NearbySurveyMapScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .align(Alignment.Center)
+                        )
                     } else if (state.nearbyLocations.isEmpty()) {
                         Text(
                             text = stringResource(id = R.string.map_no_results),

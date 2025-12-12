@@ -34,9 +34,6 @@ data class RedemptionDisplayItem(
 
 data class EditProfileUiState(
     val name: String = "",
-    val email: String = "",
-    val password: String = "******",
-    val country: String = "",
     val isSaving: Boolean = false,
     val message: String? = null
 )
@@ -81,9 +78,7 @@ class ProfileViewModel(
                 }
                 _editState.update {
                     it.copy(
-                        name = user.displayName,
-                        email = user.email,
-                        country = user.countryRegion
+                        name = user.displayName
                     )
                 }
             }
@@ -94,33 +89,35 @@ class ProfileViewModel(
         _editState.update { it.copy(name = value) }
     }
 
-    fun onEmailChanged(value: String) {
-        _editState.update { it.copy(email = value) }
-    }
-
-    fun onPasswordChanged(value: String) {
-        _editState.update { it.copy(password = value.ifEmpty { "" }) }
-    }
-
-    fun onCountryChanged(value: String) {
-        _editState.update { it.copy(country = value) }
-    }
-
     fun saveEdits() {
         viewModelScope.launch {
             val snapshot = editState.value
+            if (snapshot.name.isBlank()) {
+                _editState.update { it.copy(message = "Display name cannot be empty") }
+                return@launch
+            }
             QLog.d(TAG) { "saveEdits displayName=${snapshot.name}" }
             _editState.update { it.copy(isSaving = true, message = null) }
-            userRepository.updateProfile(
-                EditableProfile(
-                    displayName = snapshot.name,
-                    email = snapshot.email,
-                    passwordMasked = snapshot.password,
-                    countryRegion = snapshot.country
+            try {
+                userRepository.updateProfile(
+                    EditableProfile(
+                        displayName = snapshot.name,
+                        email = "", // Not used anymore
+                        passwordMasked = "", // Not used anymore
+                        countryRegion = "" // Not used anymore
+                    )
                 )
-            )
-            _editState.update { it.copy(isSaving = false, message = "Profile updated") }
-            QLog.d(TAG) { "Profile updated successfully" }
+                _editState.update { it.copy(isSaving = false, message = "Username updated successfully") }
+                QLog.d(TAG) { "Username updated successfully" }
+            } catch (e: Exception) {
+                QLog.e(TAG, e) { "Failed to update username" }
+                _editState.update { 
+                    it.copy(
+                        isSaving = false, 
+                        message = e.message ?: "Failed to update username"
+                    ) 
+                }
+            }
         }
     }
 

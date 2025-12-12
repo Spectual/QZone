@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.qzone.feature.profile.EditProfileUiState
 import com.qzone.ui.components.QzoneElevatedSurface
@@ -35,9 +34,6 @@ import kotlinx.coroutines.flow.StateFlow
 fun EditProfileScreen(
     state: StateFlow<EditProfileUiState>,
     onNameChanged: (String) -> Unit,
-    onEmailChanged: (String) -> Unit,
-    onPasswordChanged: (String) -> Unit,
-    onCountryChanged: (String) -> Unit,
     onSave: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -78,34 +74,6 @@ fun EditProfileScreen(
                     value = uiState.name,
                     onValueChange = onNameChanged,
                     label = { Text("Display name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors,
-                    shape = MaterialTheme.shapes.large
-                )
-                OutlinedTextField(
-                    value = uiState.email,
-                    onValueChange = onEmailChanged,
-                    label = { Text("Email") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors,
-                    shape = MaterialTheme.shapes.large
-                )
-                OutlinedTextField(
-                    value = uiState.password,
-                    onValueChange = onPasswordChanged,
-                    label = { Text("Password") },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors,
-                    shape = MaterialTheme.shapes.large
-                )
-                OutlinedTextField(
-                    value = uiState.country,
-                    onValueChange = onCountryChanged,
-                    label = { Text("Country / Region") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = textFieldColors,

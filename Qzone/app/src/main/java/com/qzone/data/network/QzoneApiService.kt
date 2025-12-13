@@ -9,6 +9,7 @@ import com.qzone.data.network.model.RegisterRequest
 import com.qzone.data.network.model.PhoneBindingRequest
 import com.qzone.data.network.model.PhoneLoginRequest
 import com.qzone.data.network.model.SubmitAnswerItem
+import com.qzone.data.network.model.SubmitSurveyRequest
 import com.qzone.data.network.model.SubmitResponseResult
 import com.qzone.data.network.model.NetworkSurveyDetail
 import com.qzone.data.network.model.NetworkSurveyQuestion
@@ -47,7 +48,7 @@ interface QzoneApiService {
     suspend fun register(@Body request: RegisterRequest): ApiResult<LoginResponse>
 
     @POST("/api/response/")
-    suspend fun submitResponses(@Body body: List<SubmitAnswerItem>): ApiResult<SubmitResponseResult>
+    suspend fun submitResponses(@Body body: SubmitSurveyRequest): ApiResult<SubmitResponseResult>
 
     @POST("/api/response/detail/{id}")
     suspend fun getResponseDetail(@Path("id") id: String): ApiResult<com.qzone.data.network.model.NetworkResponseDetail>

@@ -135,8 +135,12 @@ class SurveyViewModel(
             val items = buildSubmitItems(survey, answersMap)
             QLog.d(TAG) { "Submitting answers: surveyId=$surveyId items=${items.size}" }
             QLog.d(TAG) { "Submit payload JSON: ${items.toDebugJson()}" }
+            val request = com.qzone.data.network.model.SubmitSurveyRequest(
+                answers = items,
+                status = "COMPLETED"
+            )
             val response = try {
-                QzoneApiClient.service.submitResponses(items)
+                QzoneApiClient.service.submitResponses(request)
             } catch (t: Throwable) {
                 QLog.e(TAG, t) { "Submit responses failed" }
                 _uiState.update { it.copy(isSubmitting = false) }
@@ -146,6 +150,7 @@ class SurveyViewModel(
             if (response.success) {
                 val completionResponseId = response.data?.responseId
                 val serverEarnedPoints = response.data?.earnedPoints
+                val serverCompletionRate = response.data?.completionRate
                 val earnedDelta = when {
                     serverEarnedPoints != null -> {
                         applyEarnedPointsDelta(serverEarnedPoints)
@@ -153,7 +158,7 @@ class SurveyViewModel(
                     }
                     else -> refreshUserPoints()
                 }
-                repository.markSurveyCompleted(surveyId, completionResponseId)
+                repository.markSurveyCompleted(surveyId, completionResponseId, serverCompletionRate)
                 runCatching { localSurveyRepository.markSurveyCompleted(surveyId) }
                     .onFailure { throwable -> QLog.w(TAG) { "Failed to update local survey completion: ${throwable.message}" } }
                 val resolvedPoints = earnedDelta ?: survey.points
@@ -196,7 +201,11 @@ class SurveyViewModel(
             QLog.d(TAG) { "cacheProgress surveyId=$surveyId answers=${answersMap.size}" }
             val items = buildSubmitItems(survey, answersMap)
             try {
-                val response = QzoneApiClient.service.submitResponses(items)
+                val request = com.qzone.data.network.model.SubmitSurveyRequest(
+                    answers = items,
+                    status = "IN_PROGRESS"
+                )
+                val response = QzoneApiClient.service.submitResponses(request)
                 if (response.success) {
                     val responseId = response.data?.responseId ?: survey.responseId
                     val questionCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size

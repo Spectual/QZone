@@ -53,13 +53,26 @@ class ApiSurveyRepository : SurveyRepository {
         val foundData = result?.takeIf { it.success }?.data
 
         if (foundData != null) {
-            ensureHistorySynced()
+            // CRITICAL: Get existing list BEFORE syncing history to preserve recent completion status
+            // If we sync history first, it might update surveysFlow.value with server data that hasn't
+            // been updated yet, overwriting local completion status
             val existingList = surveysFlow.value
-            val currentMap = existingList.associateBy { it.id }.toMutableMap()
+            // Create a map of existing surveys, preserving completion status as the source of truth
+            val existingMap = existingList.associateBy { it.id }
+            // Sync history after capturing existing state to avoid overwriting recent completions
+            ensureHistorySynced()
             val orderedIds = mutableListOf<String>()
+            val mergedSurveys = mutableListOf<Survey>()
+            
             foundData.forEach { loc ->
-                val existing = currentMap[loc.documentId]
+                val existing = existingMap[loc.documentId]
                 val snapshot = surveyStatusCache[loc.documentId] ?: existing?.toProgressSnapshot()
+                
+                // CRITICAL: Always preserve existing completion status - if a survey was marked as completed
+                // locally, it should remain completed even if server returns it
+                val isCompleted = existing?.isCompleted ?: snapshot?.isCompleted ?: false
+                val status = existing?.status ?: snapshot?.status ?: SurveyStatus.EMPTY
+                
                 val merged = Survey(
                     id = loc.documentId,
                     title = loc.title,
@@ -70,16 +83,21 @@ class ApiSurveyRepository : SurveyRepository {
                     points = loc.points ?: existing?.points ?: 0,
                     questions = existing?.questions ?: emptyList(),
                     questionCount = snapshot?.questionCount ?: existing?.questionCount ?: 0,
-                    isCompleted = snapshot?.isCompleted ?: false,
-                    status = snapshot?.status ?: SurveyStatus.EMPTY,
+                    isCompleted = isCompleted,
+                    status = status,
                     responseId = existing?.responseId
                 )
-                currentMap[loc.documentId] = merged
+                mergedSurveys.add(merged)
                 orderedIds.add(loc.documentId)
             }
-            val orderedList = orderedIds.mapNotNull { currentMap[it] }
-            val remaining = existingList.filter { it.id !in orderedIds }.mapNotNull { currentMap[it.id] }
-            surveysFlow.value = orderedList + remaining
+            
+            // For surveys not in server response, preserve them only if they are not completed
+            // Completed surveys should not appear in the list (they are filtered out by FeedViewModel)
+            val remaining = existingList.filter { 
+                it.id !in orderedIds && !it.isCompleted 
+            }
+            
+            surveysFlow.value = mergedSurveys + remaining
         } else {
             Log.w(TAG, "Unable to load nearby surveys, keeping existing cache")
         }
@@ -123,7 +141,7 @@ class ApiSurveyRepository : SurveyRepository {
         }
     }
 
-    override suspend fun markSurveyCompleted(id: String, responseId: String?) {
+    override suspend fun markSurveyCompleted(id: String, responseId: String?, completionRate: Double?) {
         rememberProgress(id, true, SurveyStatus.COMPLETE, questionCount = surveysFlow.value.firstOrNull { it.id == id }?.questionCount ?: 0)
         var completedSurvey: Survey? = null
         surveysFlow.value = surveysFlow.value.map { survey ->
@@ -137,7 +155,7 @@ class ApiSurveyRepository : SurveyRepository {
                 updated
             } else survey
         }
-        completedSurvey?.let { updateHistoryEntry(it, markComplete = true) }
+        completedSurvey?.let { updateHistoryEntry(it, markComplete = true, serverCompletionRate = completionRate) }
     }
 
     override fun getCompletedSurveys(): Flow<List<Survey>> {
@@ -247,30 +265,38 @@ private suspend fun syncSurveyHistory(): Boolean {
 
                     if (existingIndex >= 0) {
                         val existing = currentSurveys[existingIndex]
+                        // CRITICAL: Preserve local completion status if it was recently marked as completed
+                        // This prevents server data from overwriting a just-completed survey status
+                        val isCompleted = existing.isCompleted || record.isComplete
                         currentSurveys[existingIndex] = existing.copy(
-                            isCompleted = record.isComplete,
-                            status = status,
+                            isCompleted = isCompleted,
+                            status = if (existing.isCompleted) existing.status else status,
                             questionCount = record.totalQuestions,
                             responseId = record.responseId ?: existing.responseId
                         )
-                        rememberProgress(record.surveyId, record.isComplete, status, record.totalQuestions)
+                        rememberProgress(record.surveyId, isCompleted, if (existing.isCompleted) existing.status else status, record.totalQuestions)
                     } else {
+                        // Only add completed surveys from history to surveysFlow
+                        // In-progress surveys should come from nearby locations API, not history
+                        // This prevents adding incomplete surveys that might overwrite completion status
                         rememberProgress(record.surveyId, record.isComplete, status, record.totalQuestions)
-                        currentSurveys.add(
-                            Survey(
-                                id = record.surveyId,
-                                title = record.surveyTitle,
-                                description = record.surveyDescription.orEmpty(),
-                                imageUrl = record.surveyImageUrl,
-                                latitude = 0.0,
-                                longitude = 0.0,
-                                points = 0,
-                                isCompleted = record.isComplete,
-                                status = status,
-                                questionCount = record.totalQuestions,
-                                responseId = record.responseId
+                        if (record.isComplete) {
+                            currentSurveys.add(
+                                Survey(
+                                    id = record.surveyId,
+                                    title = record.surveyTitle,
+                                    description = record.surveyDescription.orEmpty(),
+                                    imageUrl = record.surveyImageUrl,
+                                    latitude = 0.0,
+                                    longitude = 0.0,
+                                    points = 0,
+                                    isCompleted = record.isComplete,
+                                    status = status,
+                                    questionCount = record.totalQuestions,
+                                    responseId = record.responseId
+                                )
                             )
-                        )
+                        }
                     }
                 }
                 surveysFlow.value = currentSurveys
@@ -285,14 +311,15 @@ private suspend fun syncSurveyHistory(): Boolean {
         }
     }
 
-    private fun updateHistoryEntry(survey: Survey, markComplete: Boolean) {
+    private fun updateHistoryEntry(survey: Survey, markComplete: Boolean, serverCompletionRate: Double? = null) {
         val totalQuestions = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
         val answeredQuestions = if (markComplete) {
             totalQuestions
         } else {
             survey.answers.values.count { answers -> answers.isNotEmpty() }
         }
-        val completionRate = if (totalQuestions > 0) {
+        // Use server-provided completionRate if available, otherwise calculate locally
+        val completionRate = serverCompletionRate ?: if (totalQuestions > 0) {
             (answeredQuestions.toDouble() / totalQuestions.toDouble()) * 100.0
         } else {
             0.0

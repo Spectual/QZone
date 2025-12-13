@@ -58,7 +58,7 @@ class PlaceholderSurveyRepository : SurveyRepository {
         return surveysFlow.value.firstOrNull { it.id == id }
     }
 
-    override suspend fun markSurveyCompleted(id: String, responseId: String?) {
+    override suspend fun markSurveyCompleted(id: String, responseId: String?, completionRate: Double?) {
         completedIds.add(id)
         surveysFlow.value = surveysFlow.value.map { survey ->
             if (survey.id == id) {

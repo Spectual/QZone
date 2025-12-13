@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,8 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun RewardDetailScreen(
     state: StateFlow<RewardDetailUiState>,
-    onBack: () -> Unit,
-    onRedeem: () -> Unit
+    onBack: () -> Unit
 ) {
     val uiState by state.collectAsState()
     val reward = uiState.reward
@@ -94,17 +91,6 @@ fun RewardDetailScreen(
                             color = MaterialTheme.colorScheme.secondary
                         )
                     }
-                }
-                Button(
-                    onClick = onRedeem,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Text("Redeem reward")
                 }
             }
         } ?: run {

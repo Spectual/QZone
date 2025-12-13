@@ -52,6 +52,13 @@ data class SubmitAnswerItem(
     val content: String?
 )
 
+data class SubmitSurveyRequest(
+    @Json(name = "answers")
+    val answers: List<SubmitAnswerItem>,
+    @Json(name = "status")
+    val status: String
+)
+
 data class SubmitResponseResult(
     @Json(name = "responseId") val responseId: String? = null,
     @Json(name = "surveyId") val surveyId: String? = null,

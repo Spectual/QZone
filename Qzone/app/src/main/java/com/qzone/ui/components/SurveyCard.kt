@@ -183,23 +183,12 @@ fun SurveyCard(
                         contentColor = colorScheme.onSecondaryContainer
                     )
                 } else {
-                    val total = survey.questions.size
-                    val current = survey.currentQuestionIndex
-                    if (current > 0 && total > 0) {
-                        val progress = (current.toFloat() / total) * 100
-                        Text(
-                            text = "${progress.toInt()}% completed",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = accentColor
-                        )
-                    } else {
-                        val displayCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
-                        QzoneTag(
-                            text = "$displayCount questions",
-                            containerColor = statTagContainer,
-                            contentColor = statTagContent
-                        )
-                    }
+                    val displayCount = if (survey.questionCount > 0) survey.questionCount else survey.questions.size
+                    QzoneTag(
+                        text = "$displayCount questions",
+                        containerColor = statTagContainer,
+                        contentColor = statTagContent
+                    )
                 }
 
                 Icon(

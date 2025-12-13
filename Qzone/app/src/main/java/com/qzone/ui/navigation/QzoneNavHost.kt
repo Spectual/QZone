@@ -870,8 +870,7 @@ fun QzoneNavHost(
             val rewardDetailViewModel: RewardDetailViewModel = viewModel(factory = RewardDetailViewModel.factory(appState.rewardRepository, rewardId))
             RewardDetailScreen(
                 state = rewardDetailViewModel.uiState,
-                onBack = { navController.popBackStack() },
-                onRedeem = { /* Placeholder for backend integration */ }
+                onBack = { navController.popBackStack() }
             )
         }
     }

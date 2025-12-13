@@ -312,6 +312,11 @@ QZone addresses these problems through:
 - **Solution**: Room database caches surveys locally, enabling offline access
 - **Lesson**: Offline-first approach improves user experience significantly
 
+**Challenge 5: Cache-Induced UI Stuttering**
+- **Problem**: After network data loaded, saving to local database triggered local Flow emissions, causing unnecessary UI recompositions and app stuttering
+- **Solution**: Added conditional check in `FeedViewModel` using `hasLoadedFromNetwork` flag to prevent local cache updates from overriding network data and triggering UI updates after network data is loaded
+- **Lesson**: When multiple data sources (network + local cache) emit updates, implement smart merging logic to prevent redundant recompositions that degrade performance
+
 ## 3. Team Engagement and Process
 
 ### 3.1 Team Structure

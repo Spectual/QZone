@@ -44,7 +44,7 @@ This project utilized AI tools (GitHub Copilot and ChatGPT) during development f
 - **Code comments**: Inline comments marking AI-suggested patterns, values, or structures that were tested and validated
 - **Documentation**: This README and other project documentation include notes about AI-assisted content
 
-All AI-generated code was manually reviewed, tested, and refined to match project requirements and coding standards. See `final_report.md` for detailed information about AI usage in development.
+All AI-generated code was manually reviewed, tested, and refined to match project requirements and coding standards. See `deliverables/final_report.md` for detailed information about AI usage in development.
 
 ---
 

@@ -151,13 +151,11 @@ class FirebaseUserRepository(
     }
 
     override suspend fun updateProfile(edit: EditableProfile) {
-        // Only update username via backend API
         if (edit.displayName.isBlank()) {
             Log.w(TAG, "Cannot update profile: display name is blank")
             return
         }
         
-        // Call backend API to update username
         val response = runCatching {
             apiService.updateUserName(UpdateUserNameRequest(userName = edit.displayName))
         }.getOrElse { throwable ->
@@ -171,12 +169,10 @@ class FirebaseUserRepository(
             throw IllegalStateException(response.msg ?: "Failed to update username")
         }
         
-        // Update local state after successful API call
         val current = _currentUser.value
         val updated = current.copy(displayName = edit.displayName)
         _currentUser.emit(updated)
         
-        // Also update Firebase Auth profile for consistency
         auth.currentUser?.let { firebaseUser ->
             runCatching {
                 firebaseUser.updateProfile(
@@ -187,11 +183,9 @@ class FirebaseUserRepository(
                 Log.d(TAG, "Updated Firebase Auth display name")
             }.onFailure { e ->
                 Log.w(TAG, "Failed to update Firebase Auth display name", e)
-                // Continue as backend update was successful
             }
         }
         
-        // Refresh user profile from backend to ensure consistency
         fetchAndCacheUserProfile()
     }
 
@@ -315,19 +309,16 @@ class FirebaseUserRepository(
                 return@withContext false
             }
 
-            // Update Firebase Auth profile as well to ensure consistency
-            try {
-                val firebaseUser = auth.currentUser
-                if (firebaseUser != null) {
+            auth.currentUser?.let { firebaseUser ->
+                runCatching {
                     val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
                         .setPhotoUri(android.net.Uri.parse(uploadInfo.publicUrl))
                         .build()
                     firebaseUser.updateProfile(profileUpdates).await()
                     Log.d(TAG, "Updated Firebase Auth photo URL")
+                }.onFailure { e ->
+                    Log.e(TAG, "Failed to update Firebase Auth photo URL", e)
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to update Firebase Auth photo URL", e)
-                // Continue as backend update was successful
             }
 
             val current = _currentUser.value
@@ -466,7 +457,6 @@ class FirebaseUserRepository(
         )
         var profile = response.data!!
 
-        // Fallback to Firebase Auth photo URL if backend returns empty
         if (profile.avatarUrl.isNullOrBlank()) {
             auth.currentUser?.photoUrl?.toString()?.let { firebasePhoto ->
                 if (firebasePhoto.isNotBlank()) {

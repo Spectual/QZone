@@ -34,7 +34,6 @@ class LocationRepositoryImpl(
         LocationServices.getFusedLocationProviderClient(context)
 
     private val geocoder: Geocoder? = if (Geocoder.isPresent()) {
-        // Force English for address results so UI shows English location text
         Geocoder(context, Locale.ENGLISH)
     } else null
 
@@ -69,18 +68,15 @@ class LocationRepositoryImpl(
         return try {
             val location = fusedLocationClient.lastLocation.await()
             if (location != null) {
-                // Debug: log raw location values returned by FusedLocationProvider
                 QLog.d(TAG) { "getLastLocation RAW lat=${location.latitude} lng=${location.longitude} time=${location.time} acc=${location.accuracy}" }
 
-                // Validate cached lastLocation: prefer current high-accuracy reading if lastLocation is old or coarse
                 val ageMs = System.currentTimeMillis() - location.time
                 val accuracyMeters = if (location.hasAccuracy()) location.accuracy else Float.MAX_VALUE
 
                 val maxAgeMs = 60_000L // 1 minute
-                val maxAcceptableAccuracy = 50f // meters
+                val maxAcceptableAccuracy = 50f
 
                 if (ageMs <= maxAgeMs && accuracyMeters <= maxAcceptableAccuracy) {
-                    // Convert coordinates if in China (WGS-84 -> GCJ-02)
                     val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
                         val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
                         QLog.d(TAG) { "getLastLocation converted GCJ-02 lat=${converted.first} lng=${converted.second}" }
@@ -99,12 +95,10 @@ class LocationRepositoryImpl(
                         )
                     )
                 } else {
-                    // Cached value is too old or inaccurate; request an up-to-date high-accuracy location
                     QLog.d(TAG) { "getLastLocation stale cache age=${ageMs}ms acc=${accuracyMeters}m -> requesting fresh reading" }
                     getCurrentLocation()
                 }
             } else {
-                // If last location is null, try to get current location
                 getCurrentLocation()
             }
         } catch (e: SecurityException) {
@@ -128,14 +122,11 @@ class LocationRepositoryImpl(
         }
 
         return try {
-            // Prefer the Task-based getCurrentLocation which usually returns a high-accuracy instant location
             try {
                 val location = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
                 if (location != null) {
-                    // Log raw GPS coordinates (WGS-84)
                     QLog.d(TAG) { "getCurrentLocation RAW lat=${location.latitude} lng=${location.longitude} acc=${location.accuracy}" }
                     
-                    // Convert coordinates if in China (WGS-84 -> GCJ-02)
                     val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
                         val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
                         QLog.d(TAG) { "getCurrentLocation converted GCJ-02 lat=${converted.first} lng=${converted.second}" }
@@ -156,11 +147,9 @@ class LocationRepositoryImpl(
                     )
                 }
             } catch (ignored: Exception) {
-                // Fall through to requestLocationUpdates approach if getCurrentLocation fails for any reason
                 QLog.d(TAG) { "getCurrentLocation direct call failed -> ${ignored.message}" }
             }
 
-            // Fallback: request location updates and wait for the next available result
             suspendCancellableCoroutine { continuation ->
                 val locationRequest = LocationRequest.Builder(
                     Priority.PRIORITY_HIGH_ACCURACY,
@@ -171,10 +160,8 @@ class LocationRepositoryImpl(
                     override fun onLocationResult(result: LocationResult) {
                         super.onLocationResult(result)
                         result.lastLocation?.let { location ->
-                            // Log raw GPS coordinates (WGS-84)
                             QLog.d(TAG) { "getCurrentLocation callback RAW lat=${location.latitude} lng=${location.longitude} acc=${location.accuracy}" }
                             
-                            // Convert coordinates if in China (WGS-84 -> GCJ-02)
                             val (convertedLat, convertedLng) = if (CoordinateConverter.isInChina(location.latitude, location.longitude)) {
                                 val converted = CoordinateConverter.wgs84ToGcj02(location.latitude, location.longitude)
                                 QLog.d(TAG) { "getCurrentLocation callback converted GCJ-02 lat=${converted.first} lng=${converted.second}" }

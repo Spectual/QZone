@@ -30,7 +30,6 @@ object CoordinateConverter {
      */
     fun wgs84ToGcj02(wgsLat: Double, wgsLng: Double): Pair<Double, Double> {
         if (!isInChina(wgsLat, wgsLng)) {
-            // Outside China, no conversion needed
             return Pair(wgsLat, wgsLng)
         }
         

@@ -46,7 +46,6 @@ class FeedViewModel(
 
     init {
         checkLocationPermission()
-        // Observe local cache first to render offline data
         viewModelScope.launch {
             localSurveyRepository.getAllSurveys().collect { localSurveys ->
                 QLog.d(TAG) { "Local survey flow emitted size=${localSurveys.size}" }
@@ -71,17 +70,14 @@ class FeedViewModel(
                 }
                 _uiState.update { it.copy(surveys = active, completedCount = completed) }
                 
-                // Save surveys to local database
-                try {
-                    // Call suspend function with launch
-                    viewModelScope.launch {
+                viewModelScope.launch {
+                    runCatching {
                         localSurveyRepository.saveSurveys(surveys)
+                    }.onFailure { e ->
+                        QLog.w(TAG) { "Failed to save surveys to local database: ${e.message}" }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
 
-                // Prefetch surveys lacking essential details (e.g., description or question count)
                 surveys.filter { it.questionCount == 0 || it.description.isBlank() }.forEach { survey ->
                     if (prefetchingDetails.add(survey.id)) {
                         viewModelScope.launch {
@@ -95,8 +91,6 @@ class FeedViewModel(
                 }
             }
         }
-        // Trigger initial load with location when FeedViewModel is created
-        // At this point, the user should be logged in and token should be available
         if (!hasLoadedInitially) {
             hasLoadedInitially = true
             refreshWithLocation()
@@ -119,20 +113,18 @@ class FeedViewModel(
                 return@launch
             }
 
-            // Get current location
             when (val result = locationRepository.getCurrentLocation()) {
                 is LocationResult.Success -> {
-                    val success = result as LocationResult.Success
-                    QLog.d(TAG) { "Location success lat=${success.location.latitude}, lng=${success.location.longitude}" }
-                    _uiState.update { it.copy(currentLocation = success.location) }
+                    QLog.d(TAG) { "Location success lat=${result.location.latitude}, lng=${result.location.longitude}" }
+                    _uiState.update { it.copy(currentLocation = result.location) }
                     try {
-                        surveyRepository.refreshNearby(success.location, radiusMeters = 5000)
+                        surveyRepository.refreshNearby(result.location, radiusMeters = 5000)
                         refreshHistorySnapshot()
                     } catch (t: Throwable) {
                         QLog.e(TAG, t) { "Failed to refresh nearby surveys" }
-                        _uiState.update { it.copy(locationError = t.message ?: "刷新附近问卷失败") }
+                        _uiState.update { it.copy(locationError = t.message ?: "Failed to refresh nearby surveys") }
                     }
-                    loadNearbyLocationsWithCoordinates(success.location.latitude, success.location.longitude)
+                    loadNearbyLocationsWithCoordinates(result.location.latitude, result.location.longitude)
                 }
                 is LocationResult.PermissionDenied -> {
                     QLog.w(TAG) { "Location permission denied when refreshing feed" }
@@ -147,9 +139,8 @@ class FeedViewModel(
                     refreshHistorySnapshot()
                 }
                 is LocationResult.Error -> {
-                    val error = result as LocationResult.Error
-                    QLog.e(TAG) { "Location error: ${error.message}" }
-                    _uiState.update { it.copy(locationError = error.message) }
+                    QLog.e(TAG) { "Location error: ${result.message}" }
+                    _uiState.update { it.copy(locationError = result.message) }
                     surveyRepository.refreshNearby(null)
                     refreshHistorySnapshot()
                 }
@@ -162,13 +153,11 @@ class FeedViewModel(
     fun loadNearbyLocations() {
         QLog.d(TAG) { "loadNearbyLocations() invoked" }
         viewModelScope.launch {
-            // Try to get current location and load nearby surveys
             when (val result = locationRepository.getCurrentLocation()) {
                 is LocationResult.Success -> {
                     loadNearbyLocationsWithCoordinates(result.location.latitude, result.location.longitude)
                 }
                 else -> {
-                    // If no location available, use default coordinates
                     loadNearbyLocationsWithCoordinates(42.3505, -71.1054)
                 }
             }
@@ -192,11 +181,10 @@ class FeedViewModel(
                 if (result.success && result.data != null) {
                     QLog.d(TAG) { "Nearby location API returned ${result.data.size} entries" }
                     _uiState.update { it.copy(nearbyLocations = result.data, isLoadingNearby = false) }
-                    // Save nearby locations to local database
-                    try {
+                    runCatching {
                         localSurveyRepository.saveNearbyLocations(result.data)
-                    } catch (dbError: Exception) {
-                        dbError.printStackTrace()
+                    }.onFailure { e ->
+                        QLog.w(TAG) { "Failed to save nearby locations to local database: ${e.message}" }
                     }
                 } else {
                     QLog.w(TAG) { "Nearby location API failure: ${result.msg}" }
@@ -225,8 +213,8 @@ class FeedViewModel(
             QLog.w(TAG) { "No auth token available; blocking network call" }
             _uiState.update { state ->
                 state.copy(
-                    locationError = "请登录后再尝试加载附近问卷",
-                    nearbyError = state.nearbyError ?: "请登录后再尝试加载附近问卷"
+                    locationError = "Please sign in to load nearby surveys",
+                    nearbyError = state.nearbyError ?: "Please sign in to load nearby surveys"
                 )
             }
         }

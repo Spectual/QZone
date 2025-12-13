@@ -23,20 +23,16 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
         private const val TAG = "LocalSurveyRepository"
     }
 
-    // ===== Survey Operations =====
-
     suspend fun saveSurvey(survey: Survey) {
         QLog.d(TAG) { "DB saveSurvey id=${survey.id} questions=${survey.questions.size}" }
         try {
             val surveyEntity = SurveyEntity.fromSurvey(survey)
             surveyDao.insertSurvey(surveyEntity)
 
-            // Save questions and options
             survey.questions.forEachIndexed { index, question ->
                 val questionEntity = SurveyQuestionEntity.fromSurveyQuestion(survey.id, question, index)
                 questionDao.insertQuestion(questionEntity)
 
-                // Save options
                 question.options?.forEach { option ->
                     val optionEntity = SurveyOptionEntity.fromSurveyOption(question.id, option)
                     optionDao.insertOption(optionEntity)
@@ -82,8 +78,6 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
         QLog.d(TAG) { "DB observing all surveys" }
         return surveyDao.getAllSurveys().map { surveys ->
             surveys.map { survey ->
-                // For getAllSurveys, we return surveys without their detailed questions
-                // This is for performance reasons - use getSurveyById for full details
                 survey.toSurvey(questions = emptyList())
             }
         }
@@ -93,8 +87,6 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
         QLog.d(TAG) { "DB observing uncompleted surveys" }
         return surveyDao.getUncompletedSurveys().map { surveys ->
             surveys.map { survey ->
-                // For getUncompletedSurveys, we return surveys without their detailed questions
-                // This is for performance reasons - use getSurveyById for full details
                 survey.toSurvey(questions = emptyList())
             }
         }
@@ -135,7 +127,6 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
     suspend fun getSurveysByLocation(userLocation: UserLocation, radiusMeters: Int = 5000): List<Survey> {
         QLog.d(TAG) { "DB getSurveysByLocation lat=${userLocation.latitude}, lng=${userLocation.longitude}, radius=$radiusMeters" }
         return try {
-            // Convert radius from meters to degrees (rough approximation)
             val radiusDegrees = radiusMeters / 111000.0
 
             val minLat = userLocation.latitude - radiusDegrees
@@ -158,8 +149,6 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
             emptyList()
         }
     }
-
-    // ===== NearbyLocation Operations =====
 
     suspend fun saveNearbyLocation(location: NearbyLocation) {
         QLog.d(TAG) { "DB saveNearbyLocation id=${location.documentId}" }
@@ -236,8 +225,6 @@ class LocalSurveyRepository(private val database: QzoneDatabase) {
             QLog.e(TAG, e) { "Error deleting all nearby locations: ${e.message}" }
         }
     }
-
-    // ===== Database Info =====
 
     suspend fun getSurveyCount(): Int {
         QLog.d(TAG) { "DB getSurveyCount" }

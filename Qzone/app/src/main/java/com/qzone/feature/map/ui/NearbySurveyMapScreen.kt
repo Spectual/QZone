@@ -59,15 +59,12 @@ fun NearbySurveyMapScreen(
         position = CameraPosition.fromLatLngZoom(defaultLocation, 5f)
     }
 
-    // Setup ShakeDetector for shake-to-refresh
-    // Use rememberUpdatedState to always access the latest state in the callback
     val isLoadingState = rememberUpdatedState(state.isLoading)
     val onRefreshState = rememberUpdatedState(onRefresh)
     
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
         val shakeDetector = ShakeDetector {
-            // Only trigger refresh if not already loading
             if (!isLoadingState.value) {
                 onRefreshState.value()
             }
@@ -195,11 +192,8 @@ fun NearbySurveyMapScreen(
                         uiSettings = uiSettings
                     ) {
                         state.nearbyLocations.forEach { location ->
-                            val markerPosition = LatLng(location.latitude, location.longitude)
                             val snippet = buildString {
-                                location.description?.takeIf { it.isNotBlank() }?.let {
-                                    append(it)
-                                }
+                                location.description?.takeIf { it.isNotBlank() }?.let { append(it) }
                                 state.currentLocation?.let { current ->
                                     val distanceMeters = current.distanceTo(location.latitude, location.longitude)
                                     if (distanceMeters > 0) {
@@ -209,7 +203,7 @@ fun NearbySurveyMapScreen(
                                 }
                             }.ifEmpty { null }
                             Marker(
-                                state = MarkerState(position = markerPosition),
+                                state = MarkerState(position = LatLng(location.latitude, location.longitude)),
                                 title = location.title,
                                 snippet = snippet,
                                 onClick = {

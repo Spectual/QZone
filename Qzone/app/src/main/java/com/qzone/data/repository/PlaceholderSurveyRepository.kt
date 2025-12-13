@@ -84,7 +84,6 @@ class PlaceholderSurveyRepository : SurveyRepository {
     override suspend fun saveSurveyProgress(survey: Survey) {
         surveysFlow.value = surveysFlow.value.map {
             if (it.id == survey.id) {
-                // If answers are present but not complete, mark as PARTIAL
                 val newStatus = if (survey.answers.isNotEmpty() && !survey.isCompleted) {
                     SurveyStatus.PARTIAL
                 } else {
@@ -96,7 +95,6 @@ class PlaceholderSurveyRepository : SurveyRepository {
     }
 
     override suspend fun refreshSurveyHistory() {
-        // No-op for placeholder
         delay(200)
     }
 

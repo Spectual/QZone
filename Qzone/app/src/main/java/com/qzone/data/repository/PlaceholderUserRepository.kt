@@ -39,8 +39,6 @@ class PlaceholderUserRepository : UserRepository {
         }
         storedProfile = credential?.profile ?: storedProfile.copy(
             displayName = username,
-
-            // modification
             email = "${username.lowercase()}@example.com"
         )
         userFlow.value = storedProfile

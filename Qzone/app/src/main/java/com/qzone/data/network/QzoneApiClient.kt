@@ -22,7 +22,6 @@ object QzoneApiClient {
 
     private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
-            // Use BODY during debugging to capture full request/response payload including query params
             level = HttpLoggingInterceptor.Level.BODY
         }
         OkHttpClient.Builder()

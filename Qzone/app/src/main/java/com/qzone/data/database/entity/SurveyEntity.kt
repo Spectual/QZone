@@ -45,14 +45,8 @@ data class SurveyEntity(
             isCompleted = isCompleted,
             status = surveyStatus,
             currentQuestionIndex = currentQuestionIndex,
-            // Simple JSON parsing for answers map - in a real app use Gson/Moshi
             answers = if (answersJson.isNotEmpty()) {
                 try {
-                    // Very basic parsing for "key:val1,val2|key2:val3" format or similar
-                    // For now, let's assume empty map if we don't have a proper parser here
-                    // Or better, let's just use an empty map for now and rely on the Repository to handle it if needed
-                    // But wait, we need to persist it.
-                    // Let's use a simple convention: key=val1,val2;key2=val3
                     answersJson.split(";").filter { it.isNotEmpty() }.associate {
                         val parts = it.split("=")
                         if (parts.size == 2) {

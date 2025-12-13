@@ -28,7 +28,6 @@ class QzoneApp : Application() {
         FirebaseUserRepository.ensureFirebaseInitialized(this)
         UserLocalStorage.initialize(this)
         
-        // Initialize Room database
         val database = QzoneDatabase.getInstance(this)
         val localSurveyRepository = LocalSurveyRepository(database)
         

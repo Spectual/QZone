@@ -125,7 +125,6 @@ class ProfileViewModel(
         viewModelScope.launch {
             QLog.i(TAG) { "signOut requested" }
             userRepository.signOut()
-            // Delete all local survey data when user signs out
             localSurveyRepository.deleteAllSurveys()
             surveyRepository.clearCachedSurveys()
             onSignedOut()

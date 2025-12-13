@@ -45,7 +45,6 @@ fun SurveyCard(
         )
     }
     
-    // Fetch address from coordinates
     LaunchedEffect(survey.id, survey.latitude, survey.longitude) {
         if (locationRepository != null && locationAddress.isNullOrEmpty()) {
             val fetched = withContext(Dispatchers.IO) {
@@ -121,7 +120,6 @@ fun SurveyCard(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header: Title and Points
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -156,7 +154,6 @@ fun SurveyCard(
                 }
             }
 
-            // Location
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -174,7 +171,6 @@ fun SurveyCard(
                 )
             }
 
-            // Footer: Status / Progress
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -187,7 +183,6 @@ fun SurveyCard(
                         contentColor = colorScheme.onSecondaryContainer
                     )
                 } else {
-                    // Calculate progress if started
                     val total = survey.questions.size
                     val current = survey.currentQuestionIndex
                     if (current > 0 && total > 0) {
@@ -215,7 +210,6 @@ fun SurveyCard(
                 )
             }
 
-            // Progress Bar for incomplete but started surveys
             if (!survey.isCompleted && survey.currentQuestionIndex > 0 && survey.questions.isNotEmpty()) {
                 LinearProgressIndicator(
                     progress = survey.currentQuestionIndex.toFloat() / survey.questions.size,

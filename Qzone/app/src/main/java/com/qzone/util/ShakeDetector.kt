@@ -15,15 +15,12 @@ class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
     private var lastY: Float = 0f
     private var lastZ: Float = 0f
     
-    // Increased threshold to reduce sensitivity (was 800)
     private val shakeThreshold = 1500 
-    // Cooldown to prevent multiple triggers from a single shake action
     private val minTimeBetweenShakesMs = 1500L 
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             val curTime = System.currentTimeMillis()
-            // only allow one update every 100ms.
             if ((curTime - lastUpdate) > 100) {
                 val diffTime = (curTime - lastUpdate)
                 lastUpdate = curTime
@@ -52,7 +49,6 @@ class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        // Not used
     }
 
     companion object {

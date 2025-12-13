@@ -132,7 +132,6 @@ class SurveyViewModel(
                 return@launch
             }
             _uiState.update { it.copy(isSubmitting = true, validationError = null) }
-            // Build request body from answers
             val items = buildSubmitItems(survey, answersMap)
             QLog.d(TAG) { "Submitting answers: surveyId=$surveyId items=${items.size}" }
             QLog.d(TAG) { "Submit payload JSON: ${items.toDebugJson()}" }
@@ -240,7 +239,6 @@ class SurveyViewModel(
                     )
                 }
                 "multiple" -> {
-                    // Map selected option contents to their labels (e.g., A, B)
                     val labels = selectedValues.mapNotNull { ans ->
                         q.options?.firstOrNull { it.content == ans }?.label ?: ans
                     }
@@ -251,7 +249,6 @@ class SurveyViewModel(
                     )
                 }
                 else -> {
-                    // single choice or other types
                     val label = selectedValues.firstOrNull()?.let { ans ->
                         q.options?.firstOrNull { it.content == ans }?.label ?: ans
                     }

@@ -1,11 +1,10 @@
 package com.qzone.feature.feed.ui
 
 import android.Manifest
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,45 +24,31 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.GpsFixed
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.qzone.data.model.Survey
 import com.qzone.domain.repository.LocationRepository
 import com.qzone.feature.feed.FeedUiState
 import com.qzone.ui.components.QzoneElevatedSurface
-import com.qzone.ui.components.QzoneTag
 import com.qzone.ui.components.SurveyCard
 import com.qzone.ui.components.qzoneScreenBackground
+import com.qzone.util.ShakeDetector
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
-import androidx.compose.ui.platform.LocalContext
-import android.hardware.Sensor
-import android.hardware.SensorManager
-import androidx.compose.runtime.DisposableEffect
-import com.qzone.util.ShakeDetector
 
 @Composable
 fun FeedScreen(
@@ -79,15 +64,12 @@ fun FeedScreen(
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val context = LocalContext.current
 
-    // Setup ShakeDetector for shake-to-refresh
-    // Use rememberUpdatedState to always access the latest state in the callback
     val isRefreshingState = rememberUpdatedState(uiState.isRefreshing)
     val onRefreshState = rememberUpdatedState(onRefresh)
     
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
         val shakeDetector = ShakeDetector {
-            // Only trigger refresh if not already refreshing
             if (!isRefreshingState.value) {
                 onRefreshState.value()
             }
@@ -111,8 +93,6 @@ fun FeedScreen(
             onLocationPermissionGranted()
         }
     }
-
-    // Removed auto permission request: user must tap 'Enable Location' to grant.
 
     Column(
         modifier = Modifier
@@ -145,7 +125,6 @@ fun FeedScreen(
             )
         }
         
-        // Show location info only after we actually have a location
         if (uiState.hasLocationPermission && uiState.currentLocation != null) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -156,7 +135,7 @@ fun FeedScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = uiState.currentLocation!!.toDisplayString(),
+                    text = uiState.currentLocation?.toDisplayString().orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -224,10 +203,8 @@ fun FeedScreen(
                 label = { Text("Top") },
                 leadingIcon = { Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = null) }
             )
-            // Refresh removed in favor of shake-to-refresh
         }
         
-        // Display a small hint for shake-to-refresh
         Text(
             text = "Shake device to refresh",
             style = MaterialTheme.typography.labelSmall,
@@ -239,5 +216,3 @@ fun FeedScreen(
         )
     }
 }
-
-

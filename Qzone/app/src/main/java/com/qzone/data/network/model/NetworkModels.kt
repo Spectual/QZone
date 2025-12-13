@@ -64,7 +64,6 @@ data class SubmitResponseResult(
     @Json(name = "earnedPoints") val earnedPoints: Int? = null
 )
 
-// Nearby location query body (POST fallback)
 data class NearbyLocationRequest(
     @Json(name = "userLat") val userLat: Double,
     @Json(name = "userLng") val userLng: Double,

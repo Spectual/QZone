@@ -1,3 +1,4 @@
+
 # AI Usage & Reflection
 
 ## A. AI Reflection Report
@@ -15,6 +16,7 @@
 - **Where AI was helpful vs. misleading**
   - Helpful: quick Compose scaffolds with sensible defaults (layout spacing, `remember` patterns), Retrofit/Flow wiring templates, sample permission request flows, and wording for UX hints.
   - Misleading/pitfalls: suggested deprecated Compose APIs; location flows without runtime permission checks; examples that bypassed app logging (`QLog`) or our naming; overly generic network error handling that hid exceptions; occasional China-geo edge cases ignored in location handling (we kept our converter).
+  - Misleading/pitfalls: cannot automatically resolve Git merge conflicts; human review and manual conflict resolution are required before commit.
 
 - **Review & refactor practices**
   - AI-generated block was manually reviewed, trimmed, or rewritten to match Kotlin/Compose idioms (`remember`, `LaunchedEffect`, state hoisting) and project layering (UI -> ViewModel -> Repository).

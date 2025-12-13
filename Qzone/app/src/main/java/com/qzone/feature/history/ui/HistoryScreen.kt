@@ -62,24 +62,20 @@ fun HistoryScreen(
     ) {
         Spacer(modifier = Modifier.height(4.dp))
 
-        QzoneElevatedSurface {
-            OutlinedTextField(
-                value = uiState.query,
-                onValueChange = onQueryChanged,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
-                leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
-                placeholder = { Text("Search by title or description") },
-                shape = MaterialTheme.shapes.large,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
+        OutlinedTextField(
+            value = uiState.query,
+            onValueChange = onQueryChanged,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
+            placeholder = { Text("Search by title or description") },
+            shape = MaterialTheme.shapes.large,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
-        }
+        )
 
         TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->

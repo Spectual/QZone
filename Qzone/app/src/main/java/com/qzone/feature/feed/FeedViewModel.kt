@@ -103,6 +103,13 @@ class FeedViewModel(
     }
 
     
+    /**
+     * Refreshes nearby surveys using current location.
+     * 
+     * [AI-assisted]: AI suggested the guard clauses for null/permission-denied cases and the
+     * sequencing of refresh before map loading. These were validated and kept as they improve
+     * error handling and prevent crashes.
+     */
     fun refreshWithLocation() {
         QLog.d(TAG) { "refreshWithLocation() invoked" }
         viewModelScope.launch {

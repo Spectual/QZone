@@ -69,7 +69,7 @@ fun SurveyCard(
     val borderColor = if (isDark) {
         colorScheme.primary.copy(alpha = 0.35f)
     } else {
-        colorScheme.outline.copy(alpha = 0.08f)
+        Color.Black.copy(alpha = 0.15f)
     }
     val hasHeroImage = !survey.imageUrl.isNullOrBlank()
     val titleColor = if (hasHeroImage) Color.White else colorScheme.onBackground

@@ -7,6 +7,15 @@ import android.hardware.SensorManager
 import kotlin.math.sqrt
 import com.qzone.util.QLog
 
+/**
+ * Detects device shake gestures using the accelerometer sensor.
+ * 
+ * [AI-assisted]: Initial sensor implementation scaffold was AI-generated, including the threshold
+ * and cooldown values. These were tested and validated manually. The lifecycle management and
+ * integration with Compose screens were refined based on project requirements.
+ * 
+ * @param onShake Callback invoked when a shake is detected (respects cooldown period)
+ */
 class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
 
     private var lastUpdate: Long = 0
@@ -15,6 +24,7 @@ class ShakeDetector(private val onShake: () -> Unit) : SensorEventListener {
     private var lastY: Float = 0f
     private var lastZ: Float = 0f
     
+    // [AI-suggested values, tested and validated]
     private val shakeThreshold = 1500 
     private val minTimeBetweenShakesMs = 1500L 
 

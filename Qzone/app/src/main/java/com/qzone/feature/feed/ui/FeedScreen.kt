@@ -67,6 +67,9 @@ fun FeedScreen(
     val isRefreshingState = rememberUpdatedState(uiState.isRefreshing)
     val onRefreshState = rememberUpdatedState(onRefresh)
     
+    // [AI-assisted]: Shake-to-refresh integration with DisposableEffect for lifecycle management
+    // AI suggested the rememberUpdatedState pattern and DisposableEffect structure, which were
+    // refined to match project's state management approach and prevent refresh spam.
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
         val shakeDetector = ShakeDetector {

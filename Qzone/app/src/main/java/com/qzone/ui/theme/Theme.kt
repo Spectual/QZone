@@ -11,6 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 
+/**
+ * Material 3 theme configuration for QZone app.
+ * 
+ * [AI-assisted]: Theme structure and color scheme suggestions were AI-generated. The structure
+ * was manually refined to match project's design requirements, including custom color definitions
+ * and dynamic color support.
+ */
+
 
 private val LightColors = lightColorScheme(
     primary = QzonePrimary,

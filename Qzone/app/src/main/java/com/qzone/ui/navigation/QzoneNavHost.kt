@@ -75,6 +75,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
 
+/**
+ * Main navigation host for QZone app.
+ * 
+ * [AI-assisted]: Initial navigation structure scaffold was AI-generated. The structure was manually
+ * adapted for project's type-safe routing needs, including the start destination logic based on
+ * cached session and the hierarchical navigation graph.
+ */
 @Composable
 fun QzoneNavHost(
     navController: androidx.navigation.NavHostController,
